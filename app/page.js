@@ -5,7 +5,7 @@ import {
   Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, ComposedChart
 } from 'recharts'
-import { Users, DollarSign, Activity, ShoppingCart, Menu, X, Home, BarChart2, Settings, LogOut, InfoIcon, Coins, ShoppingBag, Filter, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { Users, DollarSign, Activity, ShoppingCart, Menu, X, Home, BarChart2, Settings, LogOut, InfoIcon, Coins, ShoppingBag, Filter, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 import { supabase } from './lib/supabaseClient'
 import { formatLargeNumber } from './lib/formatLargeNumber'
 import ModalFilter from './components/ModalFilter'
