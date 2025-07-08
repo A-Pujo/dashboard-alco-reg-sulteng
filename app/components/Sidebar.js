@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { Users, ShoppingCart, X, Home, BarChart2, Settings, InfoIcon, Wallet, LayoutDashboard } from 'lucide-react'
+import { Users, ShoppingCart, X, Home, BarChart2, Settings, InfoIcon, Wallet, LayoutDashboard, UserCog } from 'lucide-react'
 import Link from 'next/link'
 
 export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, setActivePLink }) {
     return(
-        <aside className={`fixed inset-y-0 left-0 w-64 bg-base-300 text-black transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 lg:z-auto`}>
+        <aside className={`fixed inset-y-0 overflow-y-auto left-0 w-64 bg-base-300 text-black transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out z-40 lg:z-auto`}>
             <div className="p-6 flex items-center justify-between border-b border-gray-300">
                 <div>
                     <h2 className="text-2xl font-bold">DASHBOARD</h2>
@@ -19,7 +19,7 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                 </button>
             </div>
 
-            <nav className="mt-8 overflow-y-auto h-3/4">
+            <nav className="mt-8 mb-2 h-3/4">
                 <Link href="/"
                     className={`flex items-center px-6 py-3 text-base-content ${activePLink == `beranda` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200`}
                     onClick={() => {
@@ -61,7 +61,7 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                     Indikator Kesejahteraan
                 </Link>
                 <Link href="/analisis-tematik"
-                    className={`flex items-center px-6 py-3 text-base-content ${activePLink == `sosio-kesejahteraan` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+                    className={`flex items-center px-6 py-3 text-base-content ${activePLink == `analisis-tematik` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
                     onClick={() => {
                         setActivePLink('analisis-tematik')
                         toggleSidebar()
@@ -70,8 +70,8 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                     <Settings className="w-5 h-5 mr-3" />
                     Isu Tematik
                 </Link>
-                <Link href="info"
-                    className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `info` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full border-y border-gray-300 transition-colors duration-200 mt-2`}
+                <Link href="/info"
+                    className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `info` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
                     onClick={() => {
                         setActivePLink('info')
                         toggleSidebar()
@@ -79,6 +79,16 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                 >
                     <InfoIcon className="w-5 h-5 mr-3" />
                     Info
+                </Link>
+                <Link href="/admin"
+                    className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `admin` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full border-y border-gray-300 transition-colors duration-200 mt-2`}
+                    onClick={() => {
+                        setActivePLink('admin')
+                        toggleSidebar()
+                    }}
+                >
+                    <UserCog className="w-5 h-5 mr-3" />
+                    Admin
                 </Link>
             </nav>
         </aside>

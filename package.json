@@ -10,10 +10,15 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
+    "bcrypt": "^6.0.0",
+    "fs": "^0.0.1-security",
+    "jshashes": "^1.0.8",
     "lucide-react": "^0.517.0",
     "next": "15.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
+    "react-select": "^5.10.1",
     "recharts": "^2.15.3"
   },
   "devDependencies": {

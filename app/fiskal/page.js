@@ -29,109 +29,37 @@ const CardKinerja = ({ title, value, unit, change, changeType = 'positive', desc
   </div>
 );
 
-// Placeholder untuk komponen grafik
-const LineChart = ({ title, data, labels }) => (
-  <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200 h-80">
-    <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-    <div className="flex items-center justify-center h-full text-gray-400">
-      {/* Ini adalah placeholder. Ganti dengan library charting seperti Recharts, Chart.js, dll. */}
-      [Grafik Garis Anda di sini]
-    </div>
-  </div>
-);
-
-// Placeholder untuk komponen tabel
-const DataTable = ({ title, columns, data }) => (
-  <div className="bg-white rounded-lg shadow-sm p-5 border border-gray-200 overflow-x-auto">
-    <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-50">
-        <tr>
-          {columns.map(col => (
-            <th key={col.accessor} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              {col.Header}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {data.length > 0 ? (
-          data.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {columns.map(col => (
-                <td key={col.accessor} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {row[col.accessor]}
-                </td>
-              ))}
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan={columns.length} className="px-6 py-4 text-center text-sm text-gray-500">
-              Tidak ada data yang tersedia.
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-);
-
-// --- Akhir Komponen Placeholder ---
-
-// --- Komponen Utama Dashboard Kinerja Fiskal ---
 export default function DashboardKinerjaFiskal() {
+  const now = new Date()
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({
-    waktu_awal: '2024-01-01',
-    waktu_akhir: '2024-12-31',
-    kategori_anggaran: '',
-    jenis_laporan: 'bulanan'
-  });
-  const [fiskalData, setFiskalData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+    waktu_awal: `${now.getFullYear()}-01-01`,
+    waktu_akhir: `${now.getFullYear()}-12-31`,
+  })
+  const [fiskalData, setFiskalData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   // Konfigurasi dinamis untuk ModalFilter
   const filterFields = [
     { label: 'Waktu Awal', name: 'waktu_awal', type: 'input', inputType: 'date' },
     { label: 'Waktu Akhir', name: 'waktu_akhir', type: 'input', inputType: 'date' },
-    {
-      label: 'Kategori Anggaran',
-      name: 'kategori_anggaran',
-      type: 'select',
-      options: [
-        { label: 'Semua', value: '' },
-        { label: 'Pendapatan', value: 'pendapatan' },
-        { label: 'Belanja', value: 'belanja' },
-      ]
-    },
-    {
-      label: 'Jenis Laporan',
-      name: 'jenis_laporan',
-      type: 'radio',
-      options: [
-        { label: 'Bulanan', value: 'bulanan' },
-        { label: 'Triwulanan', value: 'triwulanan' },
-        { label: 'Tahunan', value: 'tahunan' },
-      ]
-    },
-  ];
+  ]
 
   const handleOpenFilterModal = () => {
-        setIsFilterModalOpen(true);
-    }
+    setIsFilterModalOpen(true);
+  }
 
-    // Fungsi untuk menutup modal
-    const handleCloseFilterModal = () => {
+  // Fungsi untuk menutup modal
+  const handleCloseFilterModal = () => {
     setIsFilterModalOpen(false);
-    }
+  }
 
-    // Fungsi yang akan dipanggil oleh modal saat filter diterapkan
-    const handleApplyFilter = (filters) => {
+  // Fungsi yang akan dipanggil oleh modal saat filter diterapkan
+  const handleApplyFilter = (filters) => {
     setAppliedFilters(filters)
     // console.log(filters)
-    }
+  }
 
   // Fungsi untuk mengambil data (Anda akan mengganti ini dengan fungsi API nyata Anda)
   const fetchFiskalData = useCallback(async (filters) => {
@@ -184,22 +112,15 @@ export default function DashboardKinerjaFiskal() {
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">
-      <h1 className="text-xl font-extrabold text-gray-900 mb-6">Dashboard Kinerja Fiskal</h1>
+      <div className='flex border-b border-gray-300 py-2 mb-4'>
+        <h2 className='flex-1 text-xl font-bold'>Rangkuman Kinerja Fiskal</h2>
+        <button className='flex-none btn btn-sm btn-ghost' onClick={handleOpenFilterModal}><Filter className='w-4 h-4 text-gray-600'/></button>
+      </div>
 
       {/* Bagian Filter dan Info Tanggal */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 space-y-4 md:space-y-0">
-        <div className="flex text-xs items-center text-gray-600">
-          <CalendarDays className="w-5 h-5 mr-2" />
-          <p>Data hingga: **{appliedFilters.waktu_akhir}**</p>
-          <span className="mx-2 hidden md:block">|</span>
-          <p className="hidden md:block">Jenis Laporan: **{appliedFilters.jenis_laporan}**</p>
-        </div>
-        <button
-          onClick={handleOpenFilterModal}
-          className='btn btn-sm btn-ghost'
-        >
-          <Filter className="w-4 h-4 text-gray-600" />
-        </button>
+      <div className="flex text-xs items-center mb-4 text-gray-600">
+        <CalendarDays className="w-5 h-5 mr-2" />
+        <p>Cut off data: {appliedFilters.waktu_awal} s.d. {appliedFilters.waktu_akhir}</p>
       </div>
 
       {isLoading && (
@@ -220,7 +141,7 @@ export default function DashboardKinerjaFiskal() {
           {/* Ringkasan Kinerja (Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <CardKinerja
-              title="Total Pendapatan"
+              title="Total Pendapatan Konsolidasian"
               value={formatLargeNumber(fiskalData.totalPendapatan, 2)}
               unit="Rp"
               change={fiskalData.pendapatanYoYChange}
@@ -229,7 +150,7 @@ export default function DashboardKinerjaFiskal() {
               icon={ArrowUpRight}
             />
             <CardKinerja
-              title="Total Belanja"
+              title="Total Belanja Konsolidasian"
               value={formatLargeNumber(fiskalData.totalBelanja, 2)}
               unit="Rp"
               change={fiskalData.belanjaYoYChange}
@@ -238,7 +159,7 @@ export default function DashboardKinerjaFiskal() {
               icon={ArrowDownRight}
             />
             <CardKinerja
-              title="Surplus/Defisit"
+              title="Surplus/Defisit Konsolidasian"
               value={formatLargeNumber(fiskalData.surplusDefisit, 2)}
               unit="Rp"
               change={null} // Tidak ada perubahan YoY untuk ini
@@ -248,27 +169,18 @@ export default function DashboardKinerjaFiskal() {
           </div>
 
           {/* Grafik Tren Pendapatan & Belanja */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <LineChart
-              title="Tren Pendapatan"
-              data={fiskalData.pendapatanTrendData}
-              labels={fiskalData.trendLabels}
-            />
-            <LineChart
-              title="Tren Belanja"
-              data={fiskalData.belanjaTrendData}
-              labels={fiskalData.trendLabels}
-            />
-          </div>
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Sales and Revenue Chart */}
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Pendapatan Negara</h2>
+              asdsad
+            </div>
 
-          {/* Tabel Detail Realisasi */}
-          <div className="mb-8">
-            <DataTable
-              title="Detail Realisasi Anggaran"
-              columns={tableColumns}
-              data={fiskalData.detailTableData}
-            />
-          </div>
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Belanja Negara</h2>
+              assadsad
+            </div>
+          </section>
         </>
       )}
 
