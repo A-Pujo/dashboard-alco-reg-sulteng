@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Users, Code, Info, Server, Layers, Settings, GitBranch } from 'lucide-react'; // Contoh ikon dari lucide-react
+import Link from 'next/link';
 
 export default function InfoPage() {
   // Informasi dummy untuk Tim Pengembang
@@ -13,8 +14,7 @@ export default function InfoPage() {
       { name: 'Andi Ahmad Rivai', title: 'Change Agent/Kepala Bidang PAPK', image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg' },
     ],
     developer: [
-      { name: 'Rachmat Gerhantara', title: 'Fullstack Developer', image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg' },
-      { name: 'Aln Pujo Priambodo', title: 'Fullstack Developer + DB Administrator', image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg' },
+      { name: 'Aln Pujo Priambodo', title: 'Fullstack Developer + DB Administrator', image: '/assets/img/info/pujo.jpg' },
     ],
   }
 
@@ -27,10 +27,10 @@ export default function InfoPage() {
     { name: 'Charting Library', value: 'Recharts' },
     { name: 'Icon Library', value: 'Lucide React' },
     { name: 'Deployment Platform', value: 'Vercel' },
-  ];
+  ]
 
-  const appVersion = "1.0.0"; // Contoh nomor versi aplikasi
-  const lastUpdated = "22 Juni 2025"; // Contoh tanggal update terakhir
+  const appVersion = "1.0.1"
+  const lastUpdated = "14 Juli 2025"
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">
@@ -58,7 +58,8 @@ export default function InfoPage() {
             <div key={categoryKey}>
               <div className="grid grid-cols-1 md:grid-cols-2 md:gap-4">
                 {teamMembers[categoryKey].map((member, memberIndex) => (
-                    <div key={`${categoryKey}-${memberIndex}`} className={`flex items-center space-x-4 py-4 bg-white mb-8 border-l-4 border-primary rounded-lg shadow-sm ${(catIndex === 2 ? '' : 'col-span-3')}`}>
+                    // <div key={`${categoryKey}-${memberIndex}`} className={`flex items-center space-x-4 py-4 bg-white mb-8 border-l-4 border-primary rounded-lg shadow-sm ${(catIndex === 2 ? '' : 'col-span-3')}`}>
+                    <div key={`${categoryKey}-${memberIndex}`} className={`flex items-center space-x-4 py-4 bg-white mb-8 border-l-4 border-primary rounded-lg shadow-sm col-span-3`}>
                         <h3 className="text-lg font-semibold rotate-90 text-center capitalize border-gray-100 border-r">{categoryKey}</h3>
                         <img
                             src={member.image || '/assets/team_photos/default.jpg'}
@@ -103,15 +104,18 @@ export default function InfoPage() {
             </h3>
             <ul className="text-gray-700 space-y-2">
               <li className="flex items-center">
-                <GitBranch className="w-4 h-4 mr-2 text-blue-500" />
-                <span className="font-medium">Versi Aplikasi:</span> {appVersion}
+                <GitBranch className="w-4 h-4 mr-2 text-gray-600" />
+                <span className="font-medium">Versi Aplikasi: {appVersion}</span>
               </li>
               <li className="flex items-center">
-                <Settings className="w-4 h-4 mr-2 text-blue-500" />
-                <span className="font-medium">Pembaruan Terakhir:</span> {lastUpdated}
+                <Settings className="w-4 h-4 mr-2 text-gray-600" />
+                <span className="font-medium">Pembaruan Terakhir: {lastUpdated}</span>
               </li>
-              <li className="flex items-center text-sm text-gray-500 mt-2">
-                 * Fitur dapat berubah dan ditingkatkan secara berkala.
+              <li className="items-center text-sm text-gray-500 mt-2">
+                  <p>
+                    Coding dapat dicek di <Link className='text-secondary' href="https://github.com/A-Pujo/dashboard-alco-reg-sulteng.git" target='_blank'>A-Pujo/dashboard-alco-reg-sulteng</Link>
+                  </p>
+                  <p>Cloning is permissible 😉</p> 
               </li>
             </ul>
           </div>

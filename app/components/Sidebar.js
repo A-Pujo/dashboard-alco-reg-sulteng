@@ -50,15 +50,15 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                     <BarChart2 className="w-5 h-5 mr-3" />
                     Kondisi Perekonomian
                 </Link>
-                <Link href="/sosio-kesejahteraan"
-                    className={`flex items-center px-6 py-3 text-base-content ${activePLink == `sosio-kesejahteraan` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+                <Link href="/makro"
+                    className={`flex items-center px-6 py-3 text-base-content ${activePLink == `makro` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
                     onClick={() => {
-                        setActivePLink('sosio-kesejahteraan')
+                        setActivePLink('makro')
                         toggleSidebar()
                     }}    
                 >
                     <Users className="w-5 h-5 mr-3" />
-                    Indikator Kesejahteraan
+                    Data Makro
                 </Link>
                 <Link href="/analisis-tematik"
                     className={`flex items-center px-6 py-3 text-base-content ${activePLink == `analisis-tematik` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}

@@ -114,6 +114,7 @@ export default function Dashboard() {
     try {
       let { data, error } = await supabase.from('pdrb_sulteng_agg')
       .select('*')
+      .eq('daerah', 'Provinsi Sulawesi Tengah')
       .gte('waktu', appliedFilters.waktu_awal)
       .lte('waktu', appliedFilters.waktu_akhir)
       .order('waktu', {ascending: true})
@@ -128,9 +129,8 @@ export default function Dashboard() {
       }))
 
       setPDRBData(transformedData)
-      // console.log(transformedData)
     } catch (err) {
-      console.warn(err)
+      console.warn("Error fetching PDRB data:", err)
     } finally {
       setIsLoading(false)
     }
@@ -176,7 +176,7 @@ export default function Dashboard() {
       
       setInflasiData(transformedData)
     } catch (err) {
-      console.warn(err)
+      console.warn("Error fetching Inflasi data:", err)
     } finally {
       setIsLoading(false)
     }
@@ -195,118 +195,107 @@ export default function Dashboard() {
         throw error
       }
 
-      const transformedData = data.map(item => ({
-        ...item,
-        waktu: formatDateToMonth(item.waktu)
-      }))
-
-      let pendapatan = transformedData.reduce((acc, item) => {
-        return acc + item.pendapatan
+      let totalPendapatan = data.reduce((acc, item) => {
+        return acc + (item.pendapatan || 0)
       }, 0)
-      setPendapatanNegara(formatLargeNumber(pendapatan))
+      setPendapatanNegara(formatLargeNumber(totalPendapatan))
 
-      let belanja = transformedData.reduce((acc, item) => {
-        return acc + item.belanja
+      let totalBelanja = data.reduce((acc, item) => {
+        return acc + (item.belanja || 0)
       }, 0)
-      setBelanjaNegara(formatLargeNumber(belanja))
+      setBelanjaNegara(formatLargeNumber(totalBelanja))
       
     } catch (err) {
-      console.warn(err)
+      console.warn("Error fetching APBN data:", err)
     } finally {
       setIsLoading(false)
     }
   }
 
+  // Modified function to fetch APBD data directly from 'fiskal_pemda'
+  const fetchAPBD = async () => {
+    setIsLoading(true)
+    try {
+      // Querying 'fiskal_pemda' table directly
+      const { data, error } = await supabase.from('fiskal_pemda')
+      .select('*')
+      .gte('tgl_cutoff', appliedFilters.waktu_awal)
+      .lte('tgl_cutoff', appliedFilters.waktu_akhir)
+      .order('tgl_cutoff', {ascending: true})
+
+      if (error) {
+        throw error
+      }
+
+      // Summing up all 'pendapatan' and 'belanja' for the period from fiskal_pemda
+      let totalPendapatanDaerah = data.reduce((acc, item) => {
+        return acc + (item.pendapatan || 0)
+      }, 0)
+      setPendapatanDaerah(formatLargeNumber(totalPendapatanDaerah))
+
+      let totalBelanjaDaerah = data.reduce((acc, item) => {
+        return acc + (item.belanja || 0)
+      }, 0)
+      setBelanjaDaerah(formatLargeNumber(totalBelanjaDaerah))
+      
+    } catch (err) {
+      console.warn("Error fetching APBD data from fiskal_pemda:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // REFINED fetchMakroKesra function
   const fetchMakroKesra = useCallback(async () => {
     setIsLoading(true);
     try {
-      // --- Data Dummy (GANTI DENGAN QUERY SUPABASE ASLI ANDA) ---
-      // Anda perlu membuat tabel di Supabase untuk menyimpan data ini
-      // Misalnya, tabel 'makro_kesra' dengan kolom:
-      // id, waktu (date), tingkat_kemiskinan (float), tingkat_pengangguran (float),
-      // tpk_hotel (float), ntp (float), ntn (float),
-      // penumpang_laut (int), penumpang_udara (int)
-      // Pastikan ada cukup data (setidaknya 2 titik waktu) untuk menghitung growth
+      let { data, error } = await supabase
+        .from('makro_kesra_indicators')
+        .select('waktu, indikator, value, unit') // Select the new 'unit' column
+        .gte('waktu', appliedFilters.waktu_awal)
+        .lte('waktu', appliedFilters.waktu_akhir)
+        .order('waktu', { ascending: true }); // Order by waktu to process latest/previous correctly
 
-      // Contoh pengambilan data dari Supabase (ini hanya template)
-      // let { data, error } = await supabase.from('makro_kesra')
-      //   .select('*')
-      //   .gte('waktu', appliedFilters.waktu_awal)
-      //   .lte('waktu', appliedFilters.waktu_akhir)
-      //   .order('waktu', { ascending: true });
+      if (error) throw error;
 
-      // if (error) throw error;
+      // Group data by indicator and find latest/previous values
+      const indicatorProcessedData = {};
+      const indicatorValuesMap = new Map(); // Stores arrays of {waktu, value, unit} for each indicator
 
-      // Ambil data terbaru dan data sebelumnya
-      // const latestKesraData = data[data.length - 1];
-      // const previousKesraData = data[data.length - 2];
-
-      // Data Dummy yang akan menggantikan hasil query Supabase Anda
-      const dummyRawData = [
-        // Data periode sebelumnya (misal, 2023)
-        {
-          waktu: '2023-12-31',
-          tingkat_kemiskinan: 7.9, // persen
-          tingkat_pengangguran: 4.5, // persen
-          tpk_hotel: 55.0, // persen
-          ntp: 105.0, // poin
-          ntn: 102.5, // poin
-          penumpang_laut: 150000, // jiwa
-          penumpang_udara: 200000, // jiwa
-        },
-        // Data periode saat ini (misal, 2024 - yang akan ditampilkan)
-        {
-          waktu: '2024-12-31',
-          tingkat_kemiskinan: 7.5, // persen
-          tingkat_pengangguran: 4.2, // persen
-          tpk_hotel: 60.0, // persen
-          ntp: 107.0, // poin
-          ntn: 104.0, // poin
-          penumpang_laut: 165000, // jiwa
-          penumpang_udara: 220000, // jiwa
+      data.forEach(item => {
+        if (!indicatorValuesMap.has(item.indikator)) {
+          indicatorValuesMap.set(item.indikator, []);
         }
-      ];
+        indicatorValuesMap.get(item.indikator).push({ waktu: item.waktu, value: item.value, unit: item.unit });
+      });
 
-      const latestKesraData = dummyRawData[dummyRawData.length - 1];
-      const previousKesraData = dummyRawData[dummyRawData.length - 2];
+      // Now, for each indicator, extract the latest two values and calculate growth
+      for (const [indikatorName, values] of indicatorValuesMap.entries()) {
+        // Sort values by date to ensure correct latest/previous comparison
+        values.sort((a, b) => new Date(a.waktu).getTime() - new Date(b.waktu).getTime());
 
-      if (!latestKesraData) {
-        setMakroKesraData(null);
-        return;
+        const latestEntry = values.length > 0 ? values[values.length - 1] : null;
+        const previousEntry = values.length > 1 ? values[values.length - 2] : null;
+
+        indicatorProcessedData[indikatorName] = {
+          value: latestEntry ? latestEntry.value : null,
+          unit: latestEntry ? latestEntry.unit : null, // Get unit from the latest entry
+          growth: calculateGrowth(latestEntry?.value, previousEntry?.value),
+        };
       }
 
-      // Hitung growth untuk setiap indikator
-      const processedData = {
-        tingkatKemiskinan: {
-          value: latestKesraData.tingkat_kemiskinan,
-          growth: calculateGrowth(latestKesraData.tingkat_kemiskinan, previousKesraData?.tingkat_kemiskinan),
-        },
-        tingkatPengangguran: {
-          value: latestKesraData.tingkat_pengangguran,
-          growth: calculateGrowth(latestKesraData.tingkat_pengangguran, previousKesraData?.tingkat_pengangguran),
-        },
-        tpkHotel: {
-          value: latestKesraData.tpk_hotel,
-          growth: calculateGrowth(latestKesraData.tpk_hotel, previousKesraData?.tpk_hotel),
-        },
-        ntp: {
-          value: latestKesraData.ntp,
-          growth: calculateGrowth(latestKesraData.ntp, previousKesraData?.ntp),
-        },
-        ntn: {
-          value: latestKesraData.ntn,
-          growth: calculateGrowth(latestKesraData.ntn, previousKesraData?.ntn),
-        },
-        penumpangLaut: {
-          value: latestKesraData.penumpang_laut,
-          growth: calculateGrowth(latestKesraData.penumpang_laut, previousKesraData?.penumpang_laut),
-        },
-        penumpangUdara: {
-          value: latestKesraData.penumpang_udara,
-          growth: calculateGrowth(latestKesraData.penumpang_udara, previousKesraData?.penumpang_udara),
-        },
+      // Map raw indicator names to desired display names and structure
+      const formattedMakroKesraData = {
+        tingkatKemiskinan: indicatorProcessedData['tingkat_kemiskinan'] || { value: null, unit: null, growth: null },
+        tingkatPengangguran: indicatorProcessedData['tingkat_pengangguran'] || { value: null, unit: null, growth: null },
+        tpkHotel: indicatorProcessedData['tpk_hotel'] || { value: null, unit: null, growth: null },
+        ntp: indicatorProcessedData['ntp'] || { value: null, unit: null, growth: null },
+        ntn: indicatorProcessedData['ntn'] || { value: null, unit: null, growth: null },
+        penumpangLaut: indicatorProcessedData['penumpang_laut'] || { value: null, unit: null, growth: null },
+        penumpangUdara: indicatorProcessedData['penumpang_udara'] || { value: null, unit: null, growth: null },
       };
-      setMakroKesraData(processedData);
+
+      setMakroKesraData(formattedMakroKesraData);
 
     } catch (err) {
       console.warn("Error fetching Makro Kesra data:", err);
@@ -333,15 +322,15 @@ export default function Dashboard() {
   // Fungsi yang akan dipanggil oleh modal saat filter diterapkan
   const handleApplyFilter = (filters) => {
     setAppliedFilters(filters)
-    // console.log(filters)
   }
 
   useEffect(() => {
     fetchPDRBData()
     fetchInflasi()
     fetchAPBN()
+    fetchAPBD() // Call the updated fetchAPBD function
     fetchMakroKesra()
-  }, [appliedFilters])
+  }, [appliedFilters, fetchMakroKesra]) // Ensure all fetch functions are in the dependency array, including fetchMakroKesra because it's now wrapped in useCallback
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">
@@ -484,7 +473,6 @@ export default function Dashboard() {
       </section>
 
       <h2 className='text-xl font-bold border-b border-gray-300 py-2 mb-4'>Kondisi Makro-Kesra</h2>
-      {/* di sini */}
       {isLoading && !makroKesraData ? (
         <div className="flex justify-center items-center py-8">
           <span className="loading loading-spinner text-primary loading-lg"></span>
@@ -494,7 +482,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Tingkat Kemiskinan"
             value={makroKesraData.tingkatKemiskinan.value ? makroKesraData.tingkatKemiskinan.value.toFixed(2) : '-'}
-            unit="%"
+            unit={makroKesraData.tingkatKemiskinan.unit || '%'}
             growth={makroKesraData.tingkatKemiskinan.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -503,7 +491,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Tingkat Pengangguran Terbuka (TPT)"
             value={makroKesraData.tingkatPengangguran.value ? makroKesraData.tingkatPengangguran.value.toFixed(2) : '-'}
-            unit="%"
+            unit={makroKesraData.tingkatPengangguran.unit || '%'}
             growth={makroKesraData.tingkatPengangguran.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -512,7 +500,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Tingkat Penghunian Kamar (TPK) Hotel"
             value={makroKesraData.tpkHotel.value ? makroKesraData.tpkHotel.value.toFixed(2) : '-'}
-            unit="%"
+            unit={makroKesraData.tpkHotel.unit || '%'}
             growth={makroKesraData.tpkHotel.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -521,7 +509,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Nilai Tukar Petani (NTP)"
             value={makroKesraData.ntp.value ? makroKesraData.ntp.value.toFixed(2) : '-'}
-            unit="poin"
+            unit={makroKesraData.ntp.unit || 'poin'}
             growth={makroKesraData.ntp.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -530,7 +518,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Nilai Tukar Nelayan (NTN)"
             value={makroKesraData.ntn.value ? makroKesraData.ntn.value.toFixed(2) : '-'}
-            unit="poin"
+            unit={makroKesraData.ntn.unit || 'poin'}
             growth={makroKesraData.ntn.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -539,7 +527,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Penumpang Angkutan Laut"
             value={makroKesraData.penumpangLaut.value ? formatLargeNumber(makroKesraData.penumpangLaut.value) : '-'}
-            unit="jiwa"
+            unit={makroKesraData.penumpangLaut.unit || 'jiwa'}
             growth={makroKesraData.penumpangLaut.growth}
             growthUnit="%"
             growthDescription="YoY"
@@ -548,7 +536,7 @@ export default function Dashboard() {
           <CardIndikatorKesra
             title="Penumpang Angkutan Udara"
             value={makroKesraData.penumpangUdara.value ? formatLargeNumber(makroKesraData.penumpangUdara.value) : '-'}
-            unit="jiwa"
+            unit={makroKesraData.penumpangUdara.unit || 'jiwa'}
             growth={makroKesraData.penumpangUdara.growth}
             growthUnit="%"
             growthDescription="YoY"

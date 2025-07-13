@@ -1,16 +1,21 @@
 'use client'
 
-import ToastTemplate from '@/app/components/ToastTemplate';
-import { supabase } from '@/app/lib/supabaseClient';
-import { ArrowRight, Home, LogOut } from 'lucide-react';
-import Link from 'next/link';
-import { redirect, RedirectType } from 'next/navigation';
+import ToastTemplate from '@/app/components/ToastTemplate'
+import { supabase } from '@/app/lib/supabaseClient'
+import { ArrowRight, Home, LogOut } from 'lucide-react'
+import Link from 'next/link'
+import { redirect, RedirectType } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-import toast, { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast'
+import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
+import { AgGridReact } from 'ag-grid-react'
+
+ModuleRegistry.registerModules([AllCommunityModule])
 
 export default function AdminPanelKelolaUser() {
   const [loginInfo, setLoginInfo] = useState({})
   const [userList, setUserList] = useState([])
+  const [userTableCols, setUserTableCols] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isEditLoading, setIsEditLoading] = useState(false)
 
@@ -37,6 +42,17 @@ export default function AdminPanelKelolaUser() {
           <ToastTemplate t={t} type="success" title='Get user berhasil!' />
         ))
         setUserList(data)
+        // console.log(data[0])
+
+        // let dynamicColDefs = Object.keys(data[0]).map((key) => ({
+        //   field: key,
+        //   headerName: key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+        //   sortable: true,
+        //   filter: true,
+        //   resizable: true,
+        //   hide: ['id', 'created_at', 'password', 'updated_at', 'last_login_at'].includes(key)
+        // }))
+
       }
     } catch (err) {
       toast.custom((t) => (
@@ -125,7 +141,7 @@ export default function AdminPanelKelolaUser() {
                       <td>{item.unit}</td>
                       <td>{item.email}</td>
                       <td>{item.active == 1 ? "Aktif" : "Tidak Aktif"}</td>
-                      {item.name != 'Aln Pujo Priambodo' && (
+                      {item.role != 'admin' && (
                         <td className='join'>
                           {item.active == 0 ? (
                             <button className='join-item btn btn-xs btn-outline btn-primary' onClick={() => editUserActiveStatus(item.id, 1)} disabled={isEditLoading}>Approve</button>
