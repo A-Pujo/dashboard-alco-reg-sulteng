@@ -303,12 +303,12 @@ export default function DashboardKinerjaFiskal() {
       {fiskalData && !isLoading && !error && (
         <>
           {/* Ringkasan Kinerja APBN */}
-          <h3 className="text-xl font-bold mb-4">Kinerja APBN</h3>
+          <h3 className="text-lg font-bold mb-4">Kinerja APBN</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <CardKinerja
               title="Pendapatan APBN"
               value={formatLargeNumber(fiskalData.apbn.totalPendapatan, 2)}
-              unit="Rp"
+              unit=""
               change={fiskalData.apbn.pendapatanYoYChange}
               changeType={fiskalData.apbn.pendapatanYoYChange >= 0 ? 'positive' : 'negative'}
               description="YoY"
@@ -317,7 +317,7 @@ export default function DashboardKinerjaFiskal() {
             <CardKinerja
               title="Belanja APBN"
               value={formatLargeNumber(fiskalData.apbn.totalBelanja, 2)}
-              unit="Rp"
+              unit=""
               change={fiskalData.apbn.belanjaYoYChange}
               changeType={fiskalData.apbn.belanjaYoYChange >= 0 ? 'positive' : 'negative'}
               description="YoY"
@@ -326,7 +326,7 @@ export default function DashboardKinerjaFiskal() {
             <CardKinerja
               title="Surplus/Defisit APBN"
               value={formatLargeNumber(fiskalData.apbn.surplusDefisit, 2)}
-              unit="Rp"
+              unit=""
               change={null}
               description=""
               icon={Info}
@@ -334,12 +334,12 @@ export default function DashboardKinerjaFiskal() {
           </div>
 
           {/* Ringkasan Kinerja APBD */}
-          <h3 className="text-xl font-bold mb-4">Kinerja APBD</h3>
+          <h3 className="text-lg font-bold mb-4">Kinerja APBD</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <CardKinerja
               title="Pendapatan APBD"
               value={formatLargeNumber(fiskalData.apbd.totalPendapatan, 2)}
-              unit="Rp"
+              unit=""
               change={fiskalData.apbd.pendapatanYoYChange}
               changeType={fiskalData.apbd.pendapatanYoYChange >= 0 ? 'positive' : 'negative'}
               description="YoY"
@@ -348,7 +348,7 @@ export default function DashboardKinerjaFiskal() {
             <CardKinerja
               title="Belanja APBD"
               value={formatLargeNumber(fiskalData.apbd.totalBelanja, 2)}
-              unit="Rp"
+              unit=""
               change={fiskalData.apbd.belanjaYoYChange}
               changeType={fiskalData.apbd.belanjaYoYChange >= 0 ? 'positive' : 'negative'}
               description="YoY"
@@ -357,7 +357,7 @@ export default function DashboardKinerjaFiskal() {
             <CardKinerja
               title="Pembiayaan APBD"
               value={formatLargeNumber(fiskalData.apbd.totalPembiayaan, 2)}
-              unit="Rp"
+              unit=""
               change={fiskalData.apbd.pembiayaanYoYChange}
               changeType={fiskalData.apbd.pembiayaanYoYChange >= 0 ? 'positive' : 'negative'}
               description="YoY"
@@ -368,7 +368,7 @@ export default function DashboardKinerjaFiskal() {
           {/* Grafik Tren Pendapatan - BAR CHART */}
           <section className="bg-white p-4 rounded-lg shadow-md mb-6">
             <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Tren Pendapatan (APBN & APBD)</h2>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={400} className={`text-xs`}>
               <BarChart
                 data={chartData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -376,7 +376,7 @@ export default function DashboardKinerjaFiskal() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /> {/* Smaller font for X-axis ticks */}
                 <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 10 }} /> {/* Smaller font for Y-axis ticks */}
-                <Tooltip formatter={(value) => formatLargeNumber(value, 2) + ' Rp'} />
+                <Tooltip formatter={(value) => 'Rp' + formatLargeNumber(value, 2)} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} /> {/* Smaller font for legend */}
                 <Bar dataKey="APBN_Pendapatan" fill="#8884d8" name="APBN Pendapatan" />
                 <Bar dataKey="APBD_Pendapatan" fill="#82ca9d" name="APBD Pendapatan" />
@@ -387,7 +387,7 @@ export default function DashboardKinerjaFiskal() {
           {/* Grafik Tren Belanja - BAR CHART */}
           <section className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Tren Belanja (APBN & APBD)</h2>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={400} className={`text-xs`}>
               <BarChart
                 data={chartData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -395,7 +395,7 @@ export default function DashboardKinerjaFiskal() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} /> {/* Smaller font for X-axis ticks */}
                 <YAxis tickFormatter={formatCurrencyAxis} tick={{ fontSize: 10 }} /> {/* Smaller font for Y-axis ticks */}
-                <Tooltip formatter={(value) => formatLargeNumber(value, 2) + ' Rp'} />
+                <Tooltip formatter={(value) => 'Rp' + formatLargeNumber(value, 2)} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} /> {/* Smaller font for legend */}
                 <Bar dataKey="APBN_Belanja" fill="#ffc658" name="APBN Belanja" />
                 <Bar dataKey="APBD_Belanja" fill="#ff7300" name="APBD Belanja" />

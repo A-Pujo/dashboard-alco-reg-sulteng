@@ -79,6 +79,18 @@ export default function AdminPanelKelolaData() {
 
         <div className='w-full flex bg-white rounded-lg p-4 border border-gray-300'>
           <div className='flex-1'>
+            <h4 className='text-md font-bold mb-2'>Rincian Belanja Negara</h4>
+            <p className='text-xs'>
+              Rincian informasi Belanja Negara tingkat Regional
+            </p>
+          </div>
+          <div className='flex-none'>
+            <Link href="/admin/panel/kelola-data/belanja-negara"><ArrowRight className='text-secondary'/></Link>
+          </div>
+        </div>
+
+        <div className='w-full flex bg-white rounded-lg p-4 border border-gray-300'>
+          <div className='flex-1'>
             <h4 className='text-md font-bold mb-2'>APBD</h4>
             <p className='text-xs'>
               Realisasi Pendapatan dan Belanja Daerah se-Sulawesi Tengah
@@ -98,6 +110,18 @@ export default function AdminPanelKelolaData() {
           </div>
           <div className='flex-none'>
             <Link href="/admin/panel/kelola-data/makro-kesra"><ArrowRight className='text-secondary'/></Link>
+          </div>
+        </div>
+
+        <div className='w-full flex bg-white rounded-lg p-4 border border-gray-300'>
+          <div className='flex-1'>
+            <h4 className='text-md font-bold mb-2'>Analisis Tematik</h4>
+            <p className='text-xs'>
+              Catatan kajian/analisis tematik dari unit vertikal DJPb wilayah Sulawesi Tengah
+            </p>
+          </div>
+          <div className='flex-none'>
+            <Link href="/admin/panel/kelola-data/analisis-tematik"><ArrowRight className='text-secondary'/></Link>
           </div>
         </div>
       </div>
