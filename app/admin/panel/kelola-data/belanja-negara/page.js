@@ -339,7 +339,7 @@ export default function AdminPanelKelolaBelanjaNegara() {
         <div className="collapse-title font-semibold">Informasi Rincian Belanja Negara</div>
         <div className="collapse-content text-sm">
           Data rincian belanja negara ini disajikan sebagai ringkasan bulanan per KPPN secara kumulatif sampai dengan periode bersangkutan.
-          Untuk mengelola data, gunakan fitur "Tambah Data APBN" dan unggah CSV dengan format yang sesuai. Data dapat diambil dari Aplikasi Sintesa.
+          Untuk mengelola data, gunakan fitur Tambah Data dan unggah CSV dengan format yang sesuai. Data dapat diambil dari Aplikasi Sintesa.
         </div>
       </div>
     </main>

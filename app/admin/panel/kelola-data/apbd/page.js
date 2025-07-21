@@ -299,7 +299,7 @@ export default function AdminPanelKelolaAPBD() {
         <div className="collapse-title font-semibold">Informasi Data APBD</div>
         <div className="collapse-content text-sm">
           Data APBD ini disajikan sebagai ringkasan bulanan. Setiap baris mewakili realisasi pendapatan dan belanja untuk bulan tersebut (kumulatif).
-          Untuk mengelola data per komponen anggaran, gunakan fitur "Tambah Data APBN" dan unggah CSV dengan format yang sesuai. Data dapat diambil dari Aplikasi SIKRI.
+          Untuk mengelola data per komponen anggaran, gunakan fitur Tambah Data dan unggah CSV dengan format yang sesuai. Data dapat diambil dari Aplikasi SIKRI.
         </div>
       </div>
     </main>

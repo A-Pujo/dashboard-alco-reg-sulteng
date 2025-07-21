@@ -330,7 +330,7 @@ export default function AdminPanelKelolaAPBN() {
         <div className="collapse-title font-semibold">Informasi Data APBN</div>
         <div className="collapse-content text-sm">
           Data APBN ini disajikan sebagai ringkasan bulanan. Setiap baris mewakili total pendapatan dan belanja (realisasi dan target) untuk bulan tersebut.
-          Untuk mengelola data per komponen anggaran, gunakan fitur "Tambah Data APBN" dan unggah CSV dengan format yang sesuai.
+          Untuk mengelola data per komponen anggaran, gunakan fitur Tambah Data dan unggah CSV dengan format yang sesuai.
         </div>
       </div>
     </main>
