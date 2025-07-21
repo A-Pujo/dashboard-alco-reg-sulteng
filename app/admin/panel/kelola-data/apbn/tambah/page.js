@@ -1,33 +1,61 @@
+// /admin/panel/kelola-data/apbn/tambah/page.js
 'use client'
 
 import ToastTemplate from '@/app/components/ToastTemplate'
 import { supabase } from '@/app/lib/supabaseClient'
-import { LogOut, Plus, Save, ArrowLeft } from 'lucide-react'
+import { LogOut, Plus, Save, ArrowLeft, UploadCloud, FileText, Trash2 } from 'lucide-react' // Added Trash2 for removing dynamic fields
 import Link from 'next/link'
 import { redirect, RedirectType } from 'next/navigation'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState, useRef } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
+import Papa from 'papaparse'
 
 export default function AdminPanelAddDataAPBN() {
   const [loginInfo, setLoginInfo] = useState(null)
-  const [formData, setFormData] = useState({
+  const [dateInfo, setDateInfo] = useState({
+    thang: '',
+    bulan: '',
     tgl_cutoff: '',
-    p_pajak: '',
-    p_beacukai: '',
-    p_pnbp_lain: '',
-    p_blu: '',
-    b_pegawai: '',
-    b_barang: '',
-    b_modal: '',
-    b_bansos: '',
-    b_dbh: '',
-    b_dakfisik: '',
-    b_daknonfisik: '',
-    b_dau: '',
-    b_infis: '',
-    b_danadesa: '',
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+  // State to hold multiple budget components
+  const [budgetComponents, setBudgetComponents] = useState([
+    { komp_ang: 'p_pajak_dn', pagu_target: '', realisasi: '' },
+    { komp_ang: 'p_pajak_ln', pagu_target: '', realisasi: '' },
+    { komp_ang: 'p_pnbp_lain', pagu_target: '', realisasi: '' },
+    { komp_ang: 'p_blu', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_pegawai', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_barang', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_modal', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_bansos', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_dbh', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_dakfisik', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_daknonfisik', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_dau', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_infis', pagu_target: '', realisasi: '' },
+    { komp_ang: 'b_danadesa', pagu_target: '', realisasi: '' },
+  ]);
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false)
+  const fileInputRef = useRef(null)
+
+  // Map for display names (optional, but good for UX)
+  const componentDisplayNames = {
+    'p_pajak_dn': 'Pendapatan Pajak Dalam Negeri',
+    'p_pajak_ln': 'Pajak Perdagangan Internasional',
+    'p_pnbp_lain': 'PNBP Lain',
+    'p_blu': 'BLU',
+    'b_pegawai': 'Belanja Pegawai',
+    'b_barang': 'Belanja Barang',
+    'b_modal': 'Belanja Modal',
+    'b_bansos': 'Belanja Bansos',
+    'b_dbh': 'Dana Bagi Hasil (DBH)',
+    'b_dakfisik': 'DAK Fisik',
+    'b_daknonfisik': 'DAK Non-Fisik',
+    'b_dau': 'DAU',
+    'b_infis': 'Insentif Fiskal',
+    'b_danadesa': 'Dana Desa',
+  };
 
   // Authentication check
   useEffect(() => {
@@ -49,99 +77,244 @@ export default function AdminPanelAddDataAPBN() {
     }, 500)
   }, [])
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  // Handle changes for thang, bulan, tgl_cutoff
+  const handleDateInfoChange = (e) => {
+    const { name, value } = e.target;
+    setDateInfo(prev => ({ ...prev, [name]: value }));
+
+    // Automatically set tgl_cutoff if year and month are selected
+    if (name === 'thang' || name === 'bulan') {
+      const year = name === 'thang' ? value : dateInfo.thang;
+      const month = name === 'bulan' ? value : dateInfo.bulan;
+
+      if (year && month) {
+        const lastDay = new Date(year, month, 0).getDate(); // Get last day of the month
+        const cutoffDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+        setDateInfo(prev => ({ ...prev, tgl_cutoff: cutoffDate }));
+      }
+    }
+  };
+
+  // Handle changes for dynamic budget components
+  const handleBudgetComponentChange = (index, field, value) => {
+    const newBudgetComponents = [...budgetComponents];
+    newBudgetComponents[index][field] = value;
+    setBudgetComponents(newBudgetComponents);
+  };
+
+  const addBudgetComponent = () => {
+    setBudgetComponents(prev => [...prev, { komp_ang: '', pagu_target: '', realisasi: '' }]);
+  };
+
+  const removeBudgetComponent = (index) => {
+    setBudgetComponents(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   const handleManualSubmit = async (e) => {
     e.preventDefault()
 
-    // Basic validation: Check if all fields are filled
-    const requiredFields = [
-      'tgl_cutoff', 'p_pajak', 'p_beacukai', 'p_pnbp_lain', 'p_blu',
-      'b_pegawai', 'b_barang', 'b_modal', 'b_bansos', 'b_dbh',
-      'b_dakfisik', 'b_daknonfisik', 'b_dau', 'b_infis', 'b_danadesa'
-    ];
+    // Basic validation for date info
+    if (!dateInfo.thang || !dateInfo.bulan || !dateInfo.tgl_cutoff) {
+      toast.custom((t) => (
+        <ToastTemplate t={t} type='error' title='Validasi Gagal' description='Tahun, Bulan, dan Tanggal Cutoff wajib diisi!' />
+      ));
+      return;
+    }
 
-    for (const field of requiredFields) {
-      if (formData[field] === '') {
+    // Validate if any budget component has komp_ang but missing pagu/realisasi
+    const validData = budgetComponents.filter(comp => comp.komp_ang !== '');
+    if (validData.length === 0) {
+      toast.custom((t) => (
+        <ToastTemplate t={t} type='error' title='Validasi Gagal' description='Setidaknya satu komponen anggaran harus diisi.' />
+      ));
+      return;
+    }
+
+    for (const comp of validData) {
+      if (!comp.komp_ang || comp.pagu_target === '' || comp.realisasi === '') {
         toast.custom((t) => (
-          <ToastTemplate t={t} type='error' title='Validasi Gagal' description={`Bidang '${field.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}' wajib diisi!`} />
+          <ToastTemplate t={t} type='error' title='Validasi Gagal' description={`Komponen Anggaran '${componentDisplayNames[comp.komp_ang] || comp.komp_ang}' memiliki data yang belum lengkap.`} />
         ));
         return;
       }
     }
 
-    setIsSubmitting(true); // Set loading to true before submission
+    setIsSubmittingManual(true);
 
     try {
-      // Convert all numerical fields to numbers
-      const dataToInsert = {
-        tgl_cutoff: formData.tgl_cutoff, // Date string
-        p_pajak: parseFloat(formData.p_pajak),
-        p_beacukai: parseFloat(formData.p_beacukai),
-        p_pnbp_lain: parseFloat(formData.p_pnbp_lain),
-        p_blu: parseFloat(formData.p_blu),
-        b_pegawai: parseFloat(formData.b_pegawai),
-        b_barang: parseFloat(formData.b_barang),
-        b_modal: parseFloat(formData.b_modal),
-        b_bansos: parseFloat(formData.b_bansos),
-        b_dbh: parseFloat(formData.b_dbh),
-        b_dakfisik: parseFloat(formData.b_dakfisik),
-        b_daknonfisik: parseFloat(formData.b_daknonfisik),
-        b_dau: parseFloat(formData.b_dau),
-        b_infis: parseFloat(formData.b_infis),
-        b_danadesa: parseFloat(formData.b_danadesa),
-        // 'pendapatan' and 'belanja' are calculated on the client-side for display,
-        // not directly inserted here unless your DB schema requires it.
-        // If your database calculates them automatically or they are not required on insert,
-        // you don't need to send them.
-      };
+      const dataToInsert = validData.map(comp => ({
+        thang: parseInt(dateInfo.thang),
+        bulan: parseInt(dateInfo.bulan),
+        tgl_cutoff: dateInfo.tgl_cutoff, // This should be a valid date string (YYYY-MM-DD)
+        komp_ang: comp.komp_ang,
+        pagu_target: parseFloat(comp.pagu_target),
+        realisasi: parseFloat(comp.realisasi),
+      }));
 
       const { data, error } = await supabase
         .from('fiskal_apbn')
-        .insert([dataToInsert])
-        .select(); // Use .select() to get the inserted data back
+        .upsert(dataToInsert, {
+          onConflict: 'tgl_cutoff, komp_ang', // Unique constraint: (tgl_cutoff, komp_ang)
+          ignoreDuplicates: false, // Update existing records
+        })
+        .select();
 
       if (error) {
         throw error;
       }
 
       toast.custom((t) => (
-        <ToastTemplate t={t} type='success' title='Data APBN Berhasil Ditambahkan!' description={`Record untuk tanggal ${data[0].tgl_cutoff} telah ditambahkan.`} />
+        <ToastTemplate t={t} type='success' title='Data APBN Berhasil Disimpan!' description={`${data.length} record telah ditambahkan/diperbarui untuk tanggal ${dateInfo.tgl_cutoff}.`} />
       ));
 
       // Clear form after successful submission
-      setFormData({
-        tgl_cutoff: '',
-        p_pajak: '',
-        p_beacukai: '',
-        p_pnbp_lain: '',
-        p_blu: '',
-        b_pegawai: '',
-        b_barang: '',
-        b_modal: '',
-        b_bansos: '',
-        b_dbh: '',
-        b_dakfisik: '',
-        b_daknonfisik: '',
-        b_dau: '',
-        b_infis: '',
-        b_danadesa: '',
-      });
+      setDateInfo({ thang: '', bulan: '', tgl_cutoff: '' });
+      setBudgetComponents([
+        { komp_ang: 'p_pajak_dn', pagu_target: '', realisasi: '' },
+        { komp_ang: 'p_pajak_ln', pagu_target: '', realisasi: '' },
+        { komp_ang: 'p_pnbp_lain', pagu_target: '', realisasi: '' },
+        { komp_ang: 'p_blu', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_pegawai', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_barang', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_modal', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_bansos', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_dbh', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_dakfisik', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_daknonfisik', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_dau', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_infis', pagu_target: '', realisasi: '' },
+        { komp_ang: 'b_danadesa', pagu_target: '', realisasi: '' },
+      ]);
 
     } catch (error) {
       toast.custom((t) => (
-        <ToastTemplate t={t} type='error' title='Gagal Menambah Data' description={error.message || 'Terjadi kesalahan saat menyimpan data.'} />
+        <ToastTemplate t={t} type='error' title='Gagal Menyimpan Data' description={error.message || 'Terjadi kesalahan saat menyimpan data.'} />
       ));
-      console.error('Error inserting APBN data:', error);
+      console.error('Error inserting/updating APBN data:', error);
     } finally {
-      setIsSubmitting(false); // Always reset loading state
+      setIsSubmittingManual(false);
     }
   };
 
-  // Conditional rendering for login check
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+    } else {
+      setSelectedFile(null);
+    }
+  };
+
+  const handleUploadCSV = async () => {
+    if (!selectedFile) {
+      toast.custom((t) => (
+        <ToastTemplate t={t} type='error' title='Pilih File' description='Mohon pilih file CSV terlebih dahulu.' />
+      ));
+      return;
+    }
+
+    setIsUploadingCSV(true);
+    let successfulUploads = 0;
+    let failedUploads = 0;
+    let totalRecords = 0;
+
+    try {
+      await new Promise((resolve, reject) => {
+        Papa.parse(selectedFile, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false, // Keep as string for explicit parsing
+          complete: async (results) => {
+            const dataToUpload = results.data;
+            totalRecords = dataToUpload.length;
+
+            if (totalRecords === 0) {
+              toast.custom((t) => (
+                <ToastTemplate t={t} type='info' title='File Kosong' description='File CSV yang diunggah tidak memiliki data.' />
+              ));
+              setIsUploadingCSV(false);
+              resolve();
+              return;
+            }
+
+            // Validate headers for new APBN CSV format
+            const expectedHeaders = ['thang', 'bulan', 'tgl_cutoff', 'komp_ang', 'pagu_target', 'realisasi'];
+            const actualHeaders = results.meta.fields;
+            const missingHeaders = expectedHeaders.filter(header => !actualHeaders.includes(header));
+
+            if (missingHeaders.length > 0) {
+              toast.custom((t) => (
+                <ToastTemplate t={t} type='error' title='Header CSV Tidak Lengkap' description={`Header yang hilang: ${missingHeaders.join(', ')}. Pastikan semua kolom ada.`} />
+              ));
+              setIsUploadingCSV(false);
+              reject(new Error('Missing CSV headers'));
+              return;
+            }
+
+            const batchSize = 1000;
+            for (let i = 0; i < totalRecords; i += batchSize) {
+              const batch = dataToUpload.slice(i, i + batchSize);
+
+              const formattedBatch = batch.map(row => ({
+                thang: parseInt(row.thang),
+                bulan: parseInt(row.bulan),
+                tgl_cutoff: row.tgl_cutoff, // Should be 'YYYY-MM-DD'
+                komp_ang: row.komp_ang,
+                pagu_target: parseFloat(row.pagu_target) || 0,
+                realisasi: parseFloat(row.realisasi) || 0,
+              }));
+
+              const { error: upsertError } = await supabase
+                .from('fiskal_apbn')
+                .upsert(formattedBatch, {
+                  onConflict: 'tgl_cutoff, komp_ang', // Conflict on both date and component
+                  ignoreDuplicates: false,
+                });
+
+              if (upsertError) {
+                console.error('Batch upsert error:', upsertError);
+                failedUploads += batch.length;
+                toast.custom((t) => (
+                  <ToastTemplate t={t} type='error' title='Gagal Unggah Batch' description={`Batch gagal diunggah: ${upsertError.message}`} />
+                ));
+              } else {
+                successfulUploads += batch.length;
+              }
+            }
+
+            toast.custom((t) => (
+              <ToastTemplate
+                t={t}
+                type='success'
+                title='Unggah CSV Selesai!'
+                description={`Total: ${totalRecords}, Berhasil: ${successfulUploads}, Gagal: ${failedUploads}`}
+              />
+            ), { duration: 5000 });
+
+            setSelectedFile(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+            resolve();
+          },
+          error: (err) => {
+            console.error('CSV parsing error:', err);
+            toast.custom((t) => (
+              <ToastTemplate t={t} type='error' title='Kesalahan Parsing CSV' description={err.message} />
+            ));
+            setIsUploadingCSV(false);
+            reject(err);
+          },
+        });
+      });
+    } catch (err) {
+      console.error('Upload process error:', err);
+      setIsUploadingCSV(false);
+    } finally {
+      setIsUploadingCSV(false);
+    }
+  };
+
   if (loginInfo === null) {
     return (
       <main className="flex-1 flex items-center justify-center min-h-screen bg-base-200">
@@ -167,264 +340,208 @@ export default function AdminPanelAddDataAPBN() {
         <button className='flex-none btn btn-sm btn-ghost text-gray-600' onClick={logout}>Logout<LogOut className='w-4 h-4 text-gray-600'/></button>
       </div>
 
-      {/* Manual Input Form */}
-      <div className="card bg-base-100 mx-auto w-full"> {/* Increased max-width for better layout of many fields */}
-        <form onSubmit={handleManualSubmit} className="space-y-4 p-6"> {/* Added padding to form */}
-          <div className='text-sm'>
-            <label className="label mb-2">
-              <span className="label-text">Tanggal Cutoff</span>
-            </label>
-            <input
-              type="date" // Use type="date" for full date picker
-              name="tgl_cutoff"
-              value={formData.tgl_cutoff}
-              onChange={handleFormChange}
-              className="input input-bordered w-full"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+      <div className="collapse collapse-arrow bg-base-100 border border-base-300">
+        <input type="radio" name="data-entry-method" defaultChecked />
+        <div className="collapse-title font-semibold">Manual Entry</div>
+        <div className="collapse-content text-sm">
+          <form onSubmit={handleManualSubmit} className="space-y-4 p-4">
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div className='text-sm'>
+                <label className="label mb-2">
+                  <span className="label-text">Tahun</span>
+                </label>
+                <input
+                  type="number"
+                  name="thang"
+                  value={dateInfo.thang}
+                  onChange={handleDateInfoChange}
+                  placeholder="Contoh: 2024"
+                  className="input input-bordered w-full"
+                  required
+                  disabled={isSubmittingManual}
+                />
+              </div>
+              <div className='text-sm'>
+                <label className="label mb-2">
+                  <span className="label-text">Bulan</span>
+                </label>
+                <select
+                  name="bulan"
+                  value={dateInfo.bulan}
+                  onChange={handleDateInfoChange}
+                  className="select select-bordered w-full"
+                  required
+                  disabled={isSubmittingManual}
+                >
+                  <option value="">Pilih Bulan</option>
+                  {[...Array(12).keys()].map(i => (
+                    <option key={i + 1} value={i + 1}>{new Date(0, i).toLocaleString('id-ID', { month: 'long' })}</option>
+                  ))}
+                </select>
+              </div>
+              <div className='text-sm'>
+                <label className="label mb-2">
+                  <span className="label-text">Tanggal Cutoff</span>
+                </label>
+                <input
+                  type="date"
+                  name="tgl_cutoff"
+                  value={dateInfo.tgl_cutoff}
+                  onChange={handleDateInfoChange} // Allow manual override if needed
+                  className="input input-bordered w-full"
+                  required
+                  disabled={isSubmittingManual}
+                />
+              </div>
+            </div>
 
-          <h4 className="text-md font-semibold mt-6 mb-2">Pendapatan Negara</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Pajak (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="p_pajak"
-                value={formData.p_pajak}
-                onChange={handleFormChange}
-                placeholder="Ex: 712091242719"
-                step="any" // Allows decimal if needed, though usually integers for large sums
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Bea Cukai (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="p_beacukai"
-                value={formData.p_beacukai}
-                onChange={handleFormChange}
-                placeholder="Ex: 65476096000"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">PNBP Lain (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="p_pnbp_lain"
-                value={formData.p_pnbp_lain}
-                onChange={handleFormChange}
-                placeholder="Ex: 45167956288"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">BLU (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="p_blu"
-                value={formData.p_blu}
-                onChange={handleFormChange}
-                placeholder="Ex: 199860802"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
+            <h4 className="text-md font-semibold mt-6 mb-2">Data Komponen Anggaran</h4>
 
-          <h4 className="text-md font-semibold mt-6 mb-2">Belanja Negara</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Belanja Pegawai (Rp)</span>
+            {budgetComponents.map((component, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end border-b pb-4 mb-4">
+                <div className='text-sm md:col-span-1'>
+                  <label className="label mb-2">
+                    <span className="label-text">Komponen Anggaran</span>
+                  </label>
+                  <select
+                    name="komp_ang"
+                    value={component.komp_ang}
+                    onChange={(e) => handleBudgetComponentChange(index, 'komp_ang', e.target.value)}
+                    className="select select-bordered w-full"
+                    required
+                    disabled={isSubmittingManual}
+                  >
+                    <option value="">Pilih Komponen</option>
+                    {Object.entries(componentDisplayNames).map(([key, value]) => (
+                      <option key={key} value={key}>{value}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className='text-sm md:col-span-1'>
+                  <label className="label mb-2">
+                    <span className="label-text">Pagu Target (Rp)</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="pagu_target"
+                    value={component.pagu_target}
+                    onChange={(e) => handleBudgetComponentChange(index, 'pagu_target', e.target.value)}
+                    placeholder="Ex: 750000000000"
+                    step="any"
+                    className="input input-bordered w-full"
+                    required
+                    disabled={isSubmittingManual}
+                  />
+                </div>
+                <div className='text-sm md:col-span-1'>
+                  <label className="label mb-2">
+                    <span className="label-text">Realisasi (Rp)</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="realisasi"
+                    value={component.realisasi}
+                    onChange={(e) => handleBudgetComponentChange(index, 'realisasi', e.target.value)}
+                    placeholder="Ex: 712091242719"
+                    step="any"
+                    className="input input-bordered w-full"
+                    required
+                    disabled={isSubmittingManual}
+                  />
+                </div>
+                <div className="md:col-span-1 flex items-end justify-end">
+                  {/* Only show remove button if there's more than one component */}
+                  {budgetComponents.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeBudgetComponent(index)}
+                      className="btn btn-error btn-square btn-sm"
+                      disabled={isSubmittingManual}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={addBudgetComponent}
+              className="btn btn-outline btn-sm mb-4"
+              disabled={isSubmittingManual}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Tambah Komponen
+            </button>
+
+            <button
+              type="submit"
+              className={`btn btn-primary w-full mt-4`}
+              disabled={isSubmittingManual}
+            >
+              {isSubmittingManual ? <span className="loading loading-spinner loading-sm"></span>: <><Save className="w-5 h-5 mr-2"/> Simpan Data Manual</>}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div className="collapse collapse-arrow bg-base-100 border border-base-300">
+        <input type="radio" name="data-entry-method" />
+        <div className="collapse-title font-semibold">CSV Upload</div>
+        <div className="collapse-content text-sm">
+          <div className="p-4">
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Pilih File CSV APBN</span>
               </label>
               <input
-                type="number"
-                name="b_pegawai"
-                value={formData.b_pegawai}
-                onChange={handleFormChange}
-                placeholder="Ex: 134237884179"
-                step="any"
-                className="input input-bordered w-full"
+                type="file"
+                ref={fileInputRef}
+                accept=".csv"
+                onChange={handleFileChange}
+                className="file-input file-input-bordered w-full"
+                disabled={isUploadingCSV}
                 required
-                disabled={isSubmitting}
               />
+              {selectedFile && (
+                <div className="text-sm text-gray-500 mt-2">
+                  File terpilih: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                </div>
+              )}
             </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Belanja Barang (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_barang"
-                value={formData.b_barang}
-                onChange={handleFormChange}
-                placeholder="Ex: 57671779166"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Belanja Modal (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_modal"
-                value={formData.b_modal}
-                onChange={handleFormChange}
-                placeholder="Ex: 26952163161"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Belanja Bansos (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_bansos"
-                value={formData.b_bansos}
-                onChange={handleFormChange}
-                placeholder="Ex: 0"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Dana Bagi Hasil (DBH) (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_dbh"
-                value={formData.b_dbh}
-                onChange={handleFormChange}
-                placeholder="Ex: 230298491950"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">DAK Fisik (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_dakfisik"
-                value={formData.b_dakfisik}
-                onChange={handleFormChange}
-                placeholder="Ex: 0"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">DAK Non-Fisik (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_daknonfisik"
-                value={formData.b_daknonfisik}
-                onChange={handleFormChange}
-                placeholder="Ex: 0"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">DAU (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_dau"
-                value={formData.b_dau}
-                onChange={handleFormChange}
-                placeholder="Ex: 1000462110000"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Dana Transfer Lainnya (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_infis"
-                value={formData.b_infis}
-                onChange={handleFormChange}
-                placeholder="Ex: 0"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className='text-sm'>
-              <label className="label mb-2">
-                <span className="label-text">Dana Desa (Rp)</span>
-              </label>
-              <input
-                type="number"
-                name="b_danadesa"
-                value={formData.b_danadesa}
-                onChange={handleFormChange}
-                placeholder="Ex: 0"
-                step="any"
-                className="input input-bordered w-full"
-                required
-                disabled={isSubmitting}
-              />
+
+            <button
+              onClick={handleUploadCSV}
+              className={`btn btn-secondary w-full`}
+              disabled={isUploadingCSV || !selectedFile}
+            >
+              {isUploadingCSV ? <span className="loading loading-spinner loading-sm"></span> : <><UploadCloud className="w-5 h-5 mr-2"/> Unggah CSV</>}
+            </button>
+
+            <div className="mt-6 p-4 bg-base-200 rounded-lg text-sm text-gray-700">
+              <h4 className="font-semibold mb-2 flex items-center"><FileText className="w-4 h-4 mr-2"/> Format CSV yang Diharapkan:</h4>
+              <p className="mb-1">Setiap baris di CSV harus merepresentasikan **satu komponen anggaran** untuk suatu tanggal.</p>
+              <p className="mb-1">Pastikan file CSV Anda memiliki header berikut (case-sensitive) dan urutan kolom yang sesuai:</p>
+              <ul className="list-disc list-inside ml-4">
+                <li>`thang` (Tahun, INT, contoh: 2024)</li>
+                <li>`bulan` (Bulan, INT, contoh: 1 untuk Januari)</li>
+                <li>`tgl_cutoff` (Tanggal Cutoff, format YYYY-MM-DD, contoh: 2024-01-31)</li>
+                <li>`komp_ang` (Nama Komponen Anggaran, STRING, harus sesuai dengan daftar yang ditentukan, contoh: `p_pajak_dn`, `b_pegawai`)</li>
+                <li>`pagu_target` (Pagu/Target, FLOAT)</li>
+                <li>`realisasi` (Realisasi, FLOAT)</li>
+              </ul>
+              <p className="mt-2">Contoh Baris CSV:</p>
+              <pre className="bg-base-300 p-2 rounded-md overflow-x-auto">
+                `thang,bulan,tgl_cutoff,komp_ang,pagu_target,realisasi`<br/>
+                `2024,1,2024-01-31,p_pajak_dn,100000000000,95000000000`<br/>
+                `2024,1,2024-01-31,b_pegawai,20000000000,19000000000`<br/>
+                `2024,2,2024-02-29,p_pajak_dn,105000000000,100000000000`<br/>
+                `2024,2,2024-02-29,b_barang,30000000000,28000000000`
+              </pre>
+              <p className="mt-2">Jika ada record dengan `thang`, `bulan`, `tgl_cutoff`, DAN `komp_ang` yang sama, data yang ada akan diperbarui.</p>
             </div>
           </div>
-
-          <button
-            type="submit"
-            className={`btn btn-primary w-full mt-4`}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? <span className="loading loading-spinner loading-sm"></span>: <><Save className="w-5 h-5 mr-2"/> Simpan Data</>}
-          </button>
-        </form>
+        </div>
       </div>
     </main>
   );

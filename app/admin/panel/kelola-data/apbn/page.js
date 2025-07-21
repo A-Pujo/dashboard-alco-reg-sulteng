@@ -1,8 +1,9 @@
+// /admin/panel/kelola-data/apbn/page.js
 'use client'
 
 import ToastTemplate from '@/app/components/ToastTemplate'
 import { supabase } from '@/app/lib/supabaseClient'
-import { LogOut, Plus, Edit, Trash2 } from 'lucide-react'
+import { LogOut, Plus, Trash2, Download } from 'lucide-react' // Removed Edit as it's not applicable to summary rows
 import Link from 'next/link'
 import { redirect, RedirectType } from 'next/navigation'
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
@@ -10,13 +11,14 @@ import toast, { Toaster } from 'react-hot-toast'
 
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'
 import { AgGridReact } from 'ag-grid-react'
+import { formatLargeNumber } from '@/app/lib/formatLargeNumber' // Assuming this utility is available
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
 export default function AdminPanelKelolaAPBN() {
   const gridRef = useRef() // Ref for the AG Grid instance
   const [loginInfo, setLoginInfo] = useState(null)
-  const [apbnData, setApbnData] = useState([])
+  const [apbnSummaryData, setApbnSummaryData] = useState([]) // Renamed state to reflect summary data
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -29,31 +31,62 @@ export default function AdminPanelKelolaAPBN() {
     }
   }, [])
 
-  const fetchAPBN = useCallback(async () => {
+  const fetchAndAggregateAPBN = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
+      // Fetch all relevant data from the normalized table
       const { data, error } = await supabase
         .from('fiskal_apbn')
-        .select('*')
-        .order('tgl_cutoff', { ascending: false })
+        .select('thang, bulan, tgl_cutoff, komp_ang, pagu_target, realisasi')
+        .order('tgl_cutoff', { ascending: false }) // Order by date for consistent aggregation
 
       if (error) {
         throw error
       }
 
-      const processedData = data.map(item => ({
-        ...item,
-        // Calculate 'pendapatan' and 'belanja'
-        pendapatan: (item.p_pajak || 0) + (item.p_beacukai || 0) + (item.p_pnbp_lain || 0) + (item.p_blu || 0),
-        belanja: (item.b_pegawai || 0) + (item.b_barang || 0) + (item.b_modal || 0) + (item.b_bansos || 0) +
-                 (item.b_dbh || 0) + (item.b_dakfisik || 0) + (item.b_daknonfisik || 0) + (item.b_dau || 0) +
-                 (item.b_infis || 0) + (item.b_danadesa || 0)
-      }))
-      setApbnData(processedData)
+      // --- Client-side Aggregation Logic ---
+      const summaryMap = new Map() // Key: tgl_cutoff (or `${thang}-${bulan}`)
+
+      data.forEach(item => {
+        const key = item.tgl_cutoff; // Use tgl_cutoff as the primary aggregation key
+
+        if (!summaryMap.has(key)) {
+          summaryMap.set(key, {
+            tgl_cutoff: item.tgl_cutoff,
+            thang: item.thang,
+            bulan: item.bulan,
+            total_pendapatan_realisasi: 0,
+            total_pendapatan_pagu: 0,
+            total_belanja_realisasi: 0,
+            total_belanja_pagu: 0,
+          });
+        }
+
+        const currentSummary = summaryMap.get(key);
+
+        // Check komp_ang prefix to categorize as pendapatan or belanja
+        if (item.komp_ang.startsWith('p_')) { // Assuming 'p_' prefix for Pendapatan components
+          currentSummary.total_pendapatan_realisasi += item.realisasi || 0;
+          currentSummary.total_pendapatan_pagu += item.pagu_target || 0;
+        } else if (item.komp_ang.startsWith('b_')) { // Assuming 'b_' prefix for Belanja components
+          currentSummary.total_belanja_realisasi += item.realisasi || 0;
+          currentSummary.total_belanja_pagu += item.pagu_target || 0;
+        }
+        // Add more categories if needed (e.g., pembiayaan)
+      });
+
+      // Convert map values to an array and sort again if necessary (map iteration order is insertion order)
+      const aggregatedArray = Array.from(summaryMap.values()).sort((a, b) => {
+        // Sort by year descending, then month descending
+        if (b.thang !== a.thang) return b.thang - a.thang;
+        return b.bulan - a.bulan;
+      });
+
+      setApbnSummaryData(aggregatedArray)
     } catch (err) {
-      console.error('Error fetching APBN data:', err)
-      setError('Gagal memuat data APBN. Silakan coba lagi.')
+      console.error('Error fetching or aggregating APBN data:', err)
+      setError('Gagal memuat atau mengagregasi data APBN. Silakan coba lagi.')
       toast.custom((t) => (
         <ToastTemplate t={t} type='error' title='Kesalahan Data' description={err.message || 'Gagal memuat data APBN.'} />
       ))
@@ -64,9 +97,9 @@ export default function AdminPanelKelolaAPBN() {
 
   useEffect(() => {
     if (loginInfo) {
-      fetchAPBN()
+      fetchAndAggregateAPBN()
     }
-  }, [loginInfo, fetchAPBN])
+  }, [loginInfo, fetchAndAggregateAPBN])
 
   const logout = useCallback(() => {
     sessionStorage.removeItem('loginInfo')
@@ -98,37 +131,38 @@ export default function AdminPanelKelolaAPBN() {
   }
 
   // --- DELETE ROW LOGIC ---
+  // This will delete all records for a specific tgl_cutoff
   const handleDeleteRow = useCallback(async (rowData) => {
-    // IMPORTANT: In a production environment, replace `confirm()` with a custom modal UI.
-    // Browsers often block native `confirm()` in iframes or for better UX.
-    if (!confirm(`Apakah Anda yakin ingin menghapus data APBN untuk tanggal ${formatMonthYear(rowData.tgl_cutoff)}?`)) {
-      return
-    }
+    const isConfirmed = confirm(
+      `Apakah Anda yakin ingin menghapus semua data APBN untuk tanggal ${formatMonthYear(rowData.tgl_cutoff)}? Tindakan ini akan menghapus semua komponen anggaran untuk periode ini dan tidak bisa dibatalkan.`
+    );
 
-    try {
-      const { error } = await supabase
-        .from('fiskal_apbn') // Target the 'fiskal_apbn' table
-        .delete()
-        .eq('id', rowData.id) // Assuming 'id' is your primary key
+    if (isConfirmed) {
+      try {
+        const { error } = await supabase
+          .from('fiskal_apbn')
+          .delete()
+          .eq('tgl_cutoff', rowData.tgl_cutoff); // Delete all records matching the tgl_cutoff
 
-      if (error) {
-        throw error
+        if (error) {
+          throw error;
+        }
+
+        toast.custom((t) => (
+          <ToastTemplate t={t} type="success" title='Data APBN berhasil dihapus!' description={`Semua data untuk ${formatMonthYear(rowData.tgl_cutoff)} telah dihapus.`} />
+        ));
+
+        // Re-fetch data to update the grid after deletion
+        fetchAndAggregateAPBN();
+
+      } catch (error) {
+        toast.custom((t) => (
+          <ToastTemplate t={t} type='error' title='Gagal menghapus data APBN' description={error.message || 'Terjadi kesalahan tidak diketahui'} />
+        ));
+        console.error('Error deleting APBN row:', error);
       }
-
-      toast.custom((t) => (
-        <ToastTemplate t={t} type="success" title='Data APBN berhasil dihapus!' />
-      ))
-
-      // Re-fetch data to update the grid after deletion
-      fetchAPBN()
-
-    } catch (error) {
-      toast.custom((t) => (
-        <ToastTemplate t={t} type='error' title='Gagal menghapus data APBN' description={error.message || 'Terjadi kesalahan tidak diketahui'} />
-      ))
-      console.error('Error deleting APBN row:', error)
     }
-  }, [fetchAPBN]) // Dependency: fetchAPBN to re-load data
+  }, [fetchAndAggregateAPBN, formatMonthYear]);
 
   // Define column definitions for AG Grid
   const columnDefs = useMemo(() => [
@@ -143,8 +177,8 @@ export default function AdminPanelKelolaAPBN() {
       minWidth: 150,
     },
     {
-      headerName: 'Pendapatan',
-      field: 'pendapatan',
+      headerName: 'Total Pendapatan (Realisasi)',
+      field: 'total_pendapatan_realisasi',
       valueFormatter: params => formatRupiah(params.value),
       sortable: true,
       filter: 'agNumberColumnFilter',
@@ -154,8 +188,19 @@ export default function AdminPanelKelolaAPBN() {
       minWidth: 200,
     },
     {
-      headerName: 'Belanja',
-      field: 'belanja',
+      headerName: 'Total Pendapatan (Target)',
+      field: 'total_pendapatan_pagu',
+      valueFormatter: params => formatRupiah(params.value),
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      resizable: true,
+      cellStyle: { fontWeight: 'bold', color: '#4CAF50' }, // Green for target
+      flex: 2,
+      minWidth: 200,
+    },
+    {
+      headerName: 'Total Belanja (Realisasi)',
+      field: 'total_belanja_realisasi',
       valueFormatter: params => formatRupiah(params.value),
       sortable: true,
       filter: 'agNumberColumnFilter',
@@ -165,160 +210,29 @@ export default function AdminPanelKelolaAPBN() {
       minWidth: 200,
     },
     {
-      headerName: 'Pajak',
-      field: 'p_pajak',
+      headerName: 'Total Belanja (Target)',
+      field: 'total_belanja_pagu',
       valueFormatter: params => formatRupiah(params.value),
       sortable: true,
       filter: 'agNumberColumnFilter',
       resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Bea Cukai',
-      field: 'p_beacukai',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'PNBP Lain',
-      field: 'p_pnbp_lain',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'BLU',
-      field: 'p_blu',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Belanja Pegawai',
-      field: 'b_pegawai',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Belanja Barang',
-      field: 'b_barang',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Belanja Modal',
-      field: 'b_modal',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Belanja Bansos',
-      field: 'b_bansos',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Dana Bagi Hasil',
-      field: 'b_dbh',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'DAK Fisik',
-      field: 'b_dakfisik',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'DAK Non-Fisik',
-      field: 'b_daknonfisik',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'DAU',
-      field: 'b_dau',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Dana Transfer Lainnya',
-      field: 'b_infis',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
-    },
-    {
-      headerName: 'Dana Desa',
-      field: 'b_danadesa',
-      valueFormatter: params => formatRupiah(params.value),
-      sortable: true,
-      filter: 'agNumberColumnFilter',
-      resizable: true,
-      flex: 1.5,
-      minWidth: 150,
+      cellStyle: { fontWeight: 'bold', color: '#FFC107' }, // Amber for target
+      flex: 2,
+      minWidth: 200,
     },
     {
       headerName: 'Aksi',
+      width: 90,
       cellRenderer: (params) => (
         <div className="flex items-center justify-center space-x-2 h-full">
-          {/* Removed Edit button */}
           <button
-            className="btn btn-ghost btn-xs btn-circle tooltip tooltip-top"
-            data-tip="Hapus"
-            onClick={() => handleDeleteRow(params.data)} // Call the delete handler
+            className="btn btn-sm btn-error text-white"
+            onClick={() => handleDeleteRow(params.data)}
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ),
-      width: 80, // Adjusted width since only one button
       sortable: false,
       filter: false,
       resizable: false,
@@ -339,7 +253,7 @@ export default function AdminPanelKelolaAPBN() {
   const gridOptions = useMemo(() => ({
     pagination: true,
     paginationPageSize: 20,
-    domLayout: 'autoHeight',
+    // domLayout: 'autoHeight',
   }), [])
 
   if (loginInfo === null) {
@@ -362,20 +276,23 @@ export default function AdminPanelKelolaAPBN() {
       </div>
 
       <div className='flex border-b border-gray-300 py-2 mb-4 items-center'>
-        <h2 className='flex-1 text-xl font-bold'>Kelola Data APBN</h2>
+        <h2 className='flex-1 text-xl font-bold'>Kelola Data APBN (Ringkasan Bulanan)</h2>
         <button className='flex-none btn btn-sm btn-ghost text-gray-600' onClick={logout}>Logout<LogOut className='w-4 h-4 text-gray-600'/></button>
       </div>
 
       <div className='mb-6 flex justify-end'>
-         <Link href="/admin/panel/kelola-data/apbn/tambah" className="btn btn-primary btn-sm">
-            <Plus className='w-4 h-4' /> Tambah Data APBN
-         </Link>
+        <Link href="/assets/template-data/template-upload-apbn.xlsx" download className="btn btn-outline btn-info btn-sm rounded-full mr-1">
+          <Download className='w-4 h-4' /> Download Template
+        </Link>
+        <Link href="/admin/panel/kelola-data/apbn/tambah" className="btn btn-primary btn-sm rounded-full">
+          <Plus className='w-4 h-4' /> Tambah Data
+        </Link>
       </div>
 
       {isLoading && (
         <div className="flex items-center justify-center min-h-[200px]">
           <span className="loading loading-spinner loading-lg text-primary"></span>
-          <p className="ml-2">Memuat data...</p>
+          <p className="ml-2">Memuat dan mengagregasi data...</p>
         </div>
       )}
 
@@ -383,21 +300,21 @@ export default function AdminPanelKelolaAPBN() {
         <div className="alert alert-error">
           <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           <span>{error}</span>
-          <button className="btn btn-sm" onClick={fetchAPBN}>Coba Lagi</button>
+          <button className="btn btn-sm" onClick={fetchAndAggregateAPBN}>Coba Lagi</button>
         </div>
       )}
 
-      {!isLoading && !error && apbnData.length === 0 && (
+      {!isLoading && !error && apbnSummaryData.length === 0 && (
         <div className="alert alert-info">
-          <span>Tidak ada data APBN tersedia.</span>  
+          <span>Tidak ada data APBN tersedia.</span>
         </div>
       )}
 
-      {!isLoading && !error && apbnData.length > 0 && (
-        <div style={{ height: 400, width: '100%' }}>
+      {!isLoading && !error && apbnSummaryData.length > 0 && (
+        <div className="ag-theme-alpine" style={{ height: 500, width: '100%' }}> {/* Adjusted height for better visibility */}
           <AgGridReact
             ref={gridRef}
-            rowData={apbnData}
+            rowData={apbnSummaryData}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
             gridOptions={gridOptions}
@@ -407,6 +324,15 @@ export default function AdminPanelKelolaAPBN() {
           />
         </div>
       )}
+
+      <div className="collapse bg-white bg-base-100 border border-base-300 mt-4">
+        <input type="radio" name="my-accordion-1" defaultChecked />
+        <div className="collapse-title font-semibold">Informasi Data APBN</div>
+        <div className="collapse-content text-sm">
+          Data APBN ini disajikan sebagai ringkasan bulanan. Setiap baris mewakili total pendapatan dan belanja (realisasi dan target) untuk bulan tersebut.
+          Untuk mengelola data per komponen anggaran, gunakan fitur "Tambah Data APBN" dan unggah CSV dengan format yang sesuai.
+        </div>
+      </div>
     </main>
   )
 }

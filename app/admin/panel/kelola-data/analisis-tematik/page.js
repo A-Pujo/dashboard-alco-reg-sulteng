@@ -241,8 +241,8 @@ export default function AdminPanelKelolaAnalisisTematik() {
       </div>
 
       <div className='mb-6 flex justify-end'>
-         <Link href="/admin/panel/kelola-data/analisis-tematik/tambah" className="btn btn-primary btn-sm">
-            <Plus className='w-4 h-4' /> Tambah Analisis Tematik
+         <Link href="/admin/panel/kelola-data/analisis-tematik/tambah" className="btn btn-primary btn-sm rounded-full">
+            <Plus className='w-4 h-4' /> Tambah
          </Link>
       </div>
 

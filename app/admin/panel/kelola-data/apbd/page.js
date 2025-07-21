@@ -2,7 +2,7 @@
 
 import ToastTemplate from '@/app/components/ToastTemplate'
 
-import { LogOut, Plus, Trash2 } from 'lucide-react'
+import { Download, LogOut, Plus, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect, RedirectType } from 'next/navigation'
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
@@ -223,7 +223,6 @@ export default function AdminPanelKelolaAPBD() {
   const gridOptions = useMemo(() => ({
     pagination: true,
     paginationPageSize: 20,
-    domLayout: 'autoHeight',
   }), [])
 
   // Conditional rendering for login check
@@ -252,9 +251,12 @@ export default function AdminPanelKelolaAPBD() {
       </div>
 
       <div className='mb-6 flex justify-end'>
-         <Link href="/admin/panel/kelola-data/apbd/tambah" className="btn btn-primary btn-sm">
+          <Link href="/assets/template-data/template-upload-apbd.xlsx" download className="btn btn-outline btn-info rounded-full btn-sm mr-1">
+            <Download className='w-4 h-4' /> Download Template
+          </Link>
+          <Link href="/admin/panel/kelola-data/apbd/tambah" className="btn btn-primary btn-sm rounded-full">
             <Plus className='w-4 h-4' /> Tambah Data APBD
-         </Link>
+          </Link>
       </div>
 
       {isLoading && (
@@ -279,7 +281,7 @@ export default function AdminPanelKelolaAPBD() {
       )}
 
       {!isLoading && !error && apbdData.length > 0 && (
-        <div style={{ height: 400, width: '100%' }}>
+        <div className='mb-4' style={{ height: 400, width: '100%' }}>
           <AgGridReact
             ref={gridRef}
             rowData={apbdData}
@@ -292,6 +294,14 @@ export default function AdminPanelKelolaAPBD() {
           />
         </div>
       )}
+      <div className="collapse bg-base-100 bg-white border border-base-300 mt-4">
+        <input type="radio" name="my-accordion-1" defaultChecked />
+        <div className="collapse-title font-semibold">Informasi Data APBD</div>
+        <div className="collapse-content text-sm">
+          Data APBD ini disajikan sebagai ringkasan bulanan. Setiap baris mewakili realisasi pendapatan dan belanja untuk bulan tersebut (kumulatif).
+          Untuk mengelola data per komponen anggaran, gunakan fitur "Tambah Data APBN" dan unggah CSV dengan format yang sesuai. Data dapat diambil dari Aplikasi SIKRI.
+        </div>
+      </div>
     </main>
   )
 }

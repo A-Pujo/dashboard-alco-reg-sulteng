@@ -230,8 +230,8 @@ export default function AdminPanelKelolaMakroKesra() {
       </div>
 
       <div className='mb-6 flex justify-end'>
-         <Link href="/admin/panel/kelola-data/makro-kesra/tambah" className="btn btn-primary btn-sm">
-            <Plus className='w-4 h-4' /> Tambah Data Makro-Kesra
+         <Link href="/admin/panel/kelola-data/makro-kesra/tambah" className="btn btn-primary btn-sm rounded-full">
+            <Plus className='w-4 h-4' /> Tambah Data
          </Link>
       </div>
 

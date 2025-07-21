@@ -68,7 +68,7 @@ export default function Sidebar ({ isSidebarOpen, toggleSidebar, activePLink, se
                     }}
                 >
                     <Settings className="w-5 h-5 mr-3" />
-                    Kajian Tematik
+                    Analisis Tematik
                 </Link>
                 <Link href="/info"
                     className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `info` && `bg-base-200`} hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}

@@ -67,7 +67,15 @@ export default function Dashboard() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
 
   const waktuSekarang = new Date()
-  const [appliedFilters, setAppliedFilters] = useState({waktu_awal: `${waktuSekarang.getFullYear()}-01-01`, waktu_akhir: `${waktuSekarang.getFullYear()}-12-31`})
+  const [appliedFilters, setAppliedFilters] = useState({
+    waktu_awal: `${waktuSekarang.getFullYear()}-01-01`,
+    waktu_akhir: `${waktuSekarang.getFullYear()}-${String(waktuSekarang.getMonth() + 1).padStart(2, '0')}-${String(new Date(waktuSekarang.getFullYear(), waktuSekarang.getMonth() + 1, 0).getDate()).padStart(2, '0')}`, // Default to end of current month
+  })
+
+  // Define categories for APBN components (must match komp_ang in DB)
+  const apbnPendapatanKompAng = ['p_pajak_dn', 'p_pajak_ln', 'p_pnbp_lain', 'p_blu'];
+  const apbnBelanjaKompAng = ['b_pegawai', 'b_barang', 'b_modal', 'b_bansos', 'b_dbh', 'b_dakfisik', 'b_daknonfisik', 'b_dau', 'b_infis', 'b_danadesa'];
+
 
   const formatDateToQuarter = (dateString) => {
     if (!dateString) return null
@@ -113,11 +121,11 @@ export default function Dashboard() {
     setIsLoading(true)
     try {
       let { data, error } = await supabase.from('pdrb_sulteng_agg')
-      .select('*')
-      .eq('daerah', 'Provinsi Sulawesi Tengah')
-      .gte('waktu', appliedFilters.waktu_awal)
-      .lte('waktu', appliedFilters.waktu_akhir)
-      .order('waktu', {ascending: true})
+        .select('*')
+        .eq('daerah', 'Provinsi Sulawesi Tengah')
+        .gte('waktu', appliedFilters.waktu_awal)
+        .lte('waktu', appliedFilters.waktu_akhir)
+        .order('waktu', { ascending: true })
 
       if (error) {
         throw error
@@ -138,14 +146,14 @@ export default function Dashboard() {
 
   const fetchInflasi = async () => {
     setIsLoading(true)
-    try{
+    try {
       let { data, error } = await supabase.from('inflasi')
-      .select('*')
-      .gte('waktu', appliedFilters.waktu_awal)
-      .lte('waktu', appliedFilters.waktu_akhir)
-      .order('waktu', {ascending: true})
-      
-      if(error) {
+        .select('*')
+        .gte('waktu', appliedFilters.waktu_awal)
+        .lte('waktu', appliedFilters.waktu_akhir)
+        .order('waktu', { ascending: true })
+
+      if (error) {
         throw error
       }
 
@@ -156,7 +164,7 @@ export default function Dashboard() {
       const groupedByWaktu = new Map()
       data.forEach(item => {
         const waktuBulanan = formatDateToMonth(item.waktu)
-        if(!groupedByWaktu.has(waktuBulanan)) {
+        if (!groupedByWaktu.has(waktuBulanan)) {
           groupedByWaktu.set(waktuBulanan, {})
         }
         groupedByWaktu.get(waktuBulanan)[item.daerah] = item.inflasi_tahunan
@@ -173,7 +181,7 @@ export default function Dashboard() {
         });
         transformedData.push(entry);
       })
-      
+
       setInflasiData(transformedData)
     } catch (err) {
       console.warn("Error fetching Inflasi data:", err)
@@ -182,68 +190,94 @@ export default function Dashboard() {
     }
   }
 
-  const fetchAPBN = async () => {
-    setIsLoading(true)
+  // Helper to find the latest cumulative value from a dataset
+  const getLatestCumulativeValue = (data, valueKey, dateKey) => {
+    if (!data || data.length === 0) return 0;
+
+    // Find the latest date in the current filtered data
+    const latestDate = data.reduce((maxDate, item) => {
+      const currentDate = new Date(item[dateKey]);
+      return currentDate > maxDate ? currentDate : maxDate;
+    }, new Date(0));
+
+    // Filter to get only entries for the latest date
+    const latestEntries = data.filter(item => new Date(item[dateKey]).getTime() === latestDate.getTime());
+
+    // Sum the values for the latest date
+    return latestEntries.reduce((sum, item) => sum + (item[valueKey] || 0), 0);
+  };
+
+
+  const fetchAPBN = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const { data, error } = await supabase.from('fiskal_apbn_summary')
-      .select('*')
-      .gte('tgl_cutoff', appliedFilters.waktu_awal)
-      .lte('tgl_cutoff', appliedFilters.waktu_akhir)
-      .order('tgl_cutoff', {ascending: true})
+      // Fetch all APBN data within the filter range from the 'fiskal_apbn' table
+      // We need 'komp_ang' and 'realisasi' from this table
+      const { data, error } = await supabase.from('fiskal_apbn') // Changed to 'fiskal_apbn'
+        .select('tgl_cutoff, komp_ang, realisasi') // Select komp_ang and realisasi
+        .gte('tgl_cutoff', appliedFilters.waktu_awal)
+        .lte('tgl_cutoff', appliedFilters.waktu_akhir)
+        .order('tgl_cutoff', { ascending: true });
 
-      if (error) {
-        throw error
-      }
+      if (error) throw error;
 
-      let totalPendapatan = data.reduce((acc, item) => {
-        return acc + (item.pendapatan || 0)
-      }, 0)
-      setPendapatanNegara(formatLargeNumber(totalPendapatan))
+      let totalPendapatanRealisasi = 0;
+      let totalBelanjaRealisasi = 0;
 
-      let totalBelanja = data.reduce((acc, item) => {
-        return acc + (item.belanja || 0)
-      }, 0)
-      setBelanjaNegara(formatLargeNumber(totalBelanja))
-      
+      // Find the latest tgl_cutoff in the fetched data
+      const latestDate = data.reduce((maxDate, item) => {
+        const currentDate = new Date(item.tgl_cutoff);
+        return currentDate > maxDate ? currentDate : maxDate;
+      }, new Date(0));
+
+      // Filter data to only include records from the latest date
+      const latestDataForSummary = data.filter(item => new Date(item.tgl_cutoff).getTime() === latestDate.getTime());
+
+      // Aggregate pendapatan and belanja from the latest data
+      latestDataForSummary.forEach(item => {
+        if (apbnPendapatanKompAng.includes(item.komp_ang)) {
+          totalPendapatanRealisasi += (item.realisasi || 0);
+        } else if (apbnBelanjaKompAng.includes(item.komp_ang)) {
+          totalBelanjaRealisasi += (item.realisasi || 0);
+        }
+      });
+
+      setPendapatanNegara(formatLargeNumber(totalPendapatanRealisasi, 2));
+      setBelanjaNegara(formatLargeNumber(totalBelanjaRealisasi, 2));
+
     } catch (err) {
-      console.warn("Error fetching APBN data:", err)
+      console.warn("Error fetching APBN data:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  }, [appliedFilters, apbnPendapatanKompAng, apbnBelanjaKompAng]); // Added komp_ang arrays to dependencies
 
-  // Modified function to fetch APBD data directly from 'fiskal_pemda'
-  const fetchAPBD = async () => {
-    setIsLoading(true)
+  const fetchAPBD = useCallback(async () => {
+    setIsLoading(true);
     try {
-      // Querying 'fiskal_pemda' table directly
+      // Fetch all APBD data within the filter range
       const { data, error } = await supabase.from('fiskal_pemda')
-      .select('*')
-      .gte('tgl_cutoff', appliedFilters.waktu_awal)
-      .lte('tgl_cutoff', appliedFilters.waktu_akhir)
-      .order('tgl_cutoff', {ascending: true})
+        .select('tgl_cutoff, pendapatan, belanja')
+        .gte('tgl_cutoff', appliedFilters.waktu_awal)
+        .lte('tgl_cutoff', appliedFilters.waktu_akhir)
+        .order('tgl_cutoff', { ascending: true }); // Important for getting the latest cumulative
 
-      if (error) {
-        throw error
-      }
+      if (error) throw error;
 
-      // Summing up all 'pendapatan' and 'belanja' for the period from fiskal_pemda
-      let totalPendapatanDaerah = data.reduce((acc, item) => {
-        return acc + (item.pendapatan || 0)
-      }, 0)
-      setPendapatanDaerah(formatLargeNumber(totalPendapatanDaerah))
+      // Calculate latest cumulative pendapatan and belanja
+      const latestPendapatanDaerah = getLatestCumulativeValue(data, 'pendapatan', 'tgl_cutoff');
+      const latestBelanjaDaerah = getLatestCumulativeValue(data, 'belanja', 'tgl_cutoff');
 
-      let totalBelanjaDaerah = data.reduce((acc, item) => {
-        return acc + (item.belanja || 0)
-      }, 0)
-      setBelanjaDaerah(formatLargeNumber(totalBelanjaDaerah))
-      
+      setPendapatanDaerah(formatLargeNumber(latestPendapatanDaerah, 2));
+      setBelanjaDaerah(formatLargeNumber(latestBelanjaDaerah, 2));
+
     } catch (err) {
-      console.warn("Error fetching APBD data from fiskal_pemda:", err)
+      console.warn("Error fetching APBD data from fiskal_pemda:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  }, [appliedFilters]); // Dependency on appliedFilters
+
 
   // REFINED fetchMakroKesra function
   const fetchMakroKesra = useCallback(async () => {
@@ -330,224 +364,242 @@ export default function Dashboard() {
     fetchAPBN()
     fetchAPBD() // Call the updated fetchAPBD function
     fetchMakroKesra()
-  }, [appliedFilters, fetchMakroKesra]) // Ensure all fetch functions are in the dependency array, including fetchMakroKesra because it's now wrapped in useCallback
+  }, [appliedFilters]) // Ensure all fetch functions are in the dependency array, including fetchMakroKesra because it's now wrapped in useCallback
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">
       <div className='flex border-b border-gray-300 py-2 mb-4'>
         <h2 className='flex-1 text-xl font-bold'>Rangkuman Kinerja Fiskal</h2>
-        <button className='flex-none btn btn-sm btn-ghost' onClick={handleOpenFilterModal}><Filter className='w-4 h-4 text-gray-600'/></button>
+        <button className='flex-none btn btn-sm btn-ghost' onClick={handleOpenFilterModal}><Filter className='w-4 h-4 text-gray-600' /></button>
       </div>
 
-      {/* Key Metrics Section */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Metric Card 1: Total Users */}
-        <div className="border-l-4 border-primary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Pendapatan Negara</p>
-            <p className="text-3xl font-semibold text-gray-900">{pendapatanNegara}</p>
-          </div>
-          <DollarSign className="w-10 h-10 text-yellow-500" />
-        </div>
+      {/* Bagian Filter dan Info Tanggal */}
+      <div className="flex text-xs items-center mb-4 text-gray-600">
+        <InfoIcon className="w-4 h-4 mr-2" />
+        <p>Data ditampilkan hingga tanggal {appliedFilters.waktu_akhir}</p>
+      </div>
 
-        {/* Metric Card 2: Total Revenue */}
-        <div className="border-l-4 border-primary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Belanja Negara</p>
-            <p className="text-3xl font-semibold text-gray-900">{belanjaNegara}</p>
-          </div>
-          <ShoppingCart className="w-10 h-10 text-info" />
-        </div>
-
-        {/* Metric Card 3: Sales Today */}
-        <div className="border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Pendapatan Daerah</p>
-            <p className="text-3xl font-semibold text-gray-900">{pendapatanDaerah}</p>
-          </div>
-          <Coins className="w-10 h-10 text-yellow-500" />
-        </div>
-
-        {/* Metric Card 4: Active Now */}
-        <div className="border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Belanja Daerah</p>
-            <p className="text-3xl font-semibold text-gray-900">{belanjaDaerah}</p>
-          </div>
-          <ShoppingBag className="w-10 h-10 text-info" />
-        </div>
-      </section>
-
-      <h2 className='text-xl font-bold border-b border-gray-300 py-2 mb-4'><i>Overview</i> Ekonomi</h2>
-
-      {/* Charts Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-        {/* Sales and Revenue Chart */}
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">PDRB Nominal</h2>
-          {(PDRBData.length > 0) ? (
-            <ResponsiveContainer className={`text-xs`} width="100%" height={300}>
-              <ComposedChart data={PDRBData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="waktu" axisLine={false} tickLine={false} />
-                <YAxis
-                  yAxisId='left'
-                  dataKey="adhb"
-                  axisLine={false}
-                  tickLine={false}
-                  label={{ 
-                    value: 'Miliar', 
-                    style: { textAnchor: 'middle' }, 
-                    angle: -90, 
-                    position: 'left', 
-                    offset: 0
-                  }}
-                />
-                <YAxis
-                  yAxisId='right'
-                  dataKey="laju_tahunan"
-                  axisLine={false}
-                  tickLine={false}
-                  orientation='right'
-                  label={{ 
-                    value: 'Persen (%)', 
-                    style: { textAnchor: 'middle' }, 
-                    angle: -90, 
-                    position: 'right', 
-                    offset: 0
-                  }}
-                />
-                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                <Bar yAxisId='left' dataKey="adhb" fill="#8884d8" name="PDRB" barSize={30}/>
-                <Line yAxisId="right" name='Laju Tahunan' dataKey="laju_tahunan" stroke="#82ca9d" strokeWidth={4} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex justify-center items-center skeleton h-[300px] w-full">
-              <span className="loading loading-spinner text-secondary loading-lg"></span>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Inflasi</h2>
-          {(inflasiData.length > 0) ? (
-            <ResponsiveContainer width="100%" height={300} className={`text-xs`}>
-              <LineChart data={inflasiData} >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="waktu" 
-                  axisLine={false}
-                  tickLine={false}
-                  label={{ 
-                    style: { textAnchor: 'middle' }, 
-                    angle: -90,
-                    offset: 0
-                  }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false} 
-                  label={{ 
-                    value: 'Persen (%)', 
-                    style: { textAnchor: 'middle' }, 
-                    angle: -90, 
-                    position: 'left', 
-                    offset: 0
-                  }}
-                />
-                <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Legend wrapperStyle={{ paddingTop: '10px' }} />
-                {inflasiUniqueDaerah.map((daerah, index) => (
-                  <Line type="monotone" key={daerah} dataKey={daerah} stroke={getLineColor(index)} activeDot={{ r: 8 }} strokeWidth={3} name={`${daerah}`} />
-                )
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex justify-center items-center skeleton h-[300px] w-full">
-              <span className="loading loading-spinner text-secondary loading-lg"></span>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <h2 className='text-xl font-bold border-b border-gray-300 py-2 mb-4'>Kondisi Makro-Kesra</h2>
-      {isLoading && !makroKesraData ? (
-        <div className="flex justify-center items-center py-8">
-          <span className="loading loading-spinner text-primary loading-lg"></span>
-        </div>
-      ) : makroKesraData ? (
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-          <CardIndikatorKesra
-            title="Tingkat Kemiskinan"
-            value={makroKesraData.tingkatKemiskinan.value ? makroKesraData.tingkatKemiskinan.value.toFixed(2) : '-'}
-            unit={makroKesraData.tingkatKemiskinan.unit || '%'}
-            growth={makroKesraData.tingkatKemiskinan.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Persentase penduduk miskin terhadap total penduduk."
-          />
-          <CardIndikatorKesra
-            title="Tingkat Pengangguran Terbuka (TPT)"
-            value={makroKesraData.tingkatPengangguran.value ? makroKesraData.tingkatPengangguran.value.toFixed(2) : '-'}
-            unit={makroKesraData.tingkatPengangguran.unit || '%'}
-            growth={makroKesraData.tingkatPengangguran.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Persentase angkatan kerja yang tidak memiliki pekerjaan."
-          />
-          <CardIndikatorKesra
-            title="Tingkat Penghunian Kamar (TPK) Hotel"
-            value={makroKesraData.tpkHotel.value ? makroKesraData.tpkHotel.value.toFixed(2) : '-'}
-            unit={makroKesraData.tpkHotel.unit || '%'}
-            growth={makroKesraData.tpkHotel.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Persentase rata-rata kamar hotel yang dihuni dari total kamar tersedia."
-          />
-          <CardIndikatorKesra
-            title="Nilai Tukar Petani (NTP)"
-            value={makroKesraData.ntp.value ? makroKesraData.ntp.value.toFixed(2) : '-'}
-            unit={makroKesraData.ntp.unit || 'poin'}
-            growth={makroKesraData.ntp.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Indikator daya beli petani di pedesaan."
-          />
-          <CardIndikatorKesra
-            title="Nilai Tukar Nelayan (NTN)"
-            value={makroKesraData.ntn.value ? makroKesraData.ntn.value.toFixed(2) : '-'}
-            unit={makroKesraData.ntn.unit || 'poin'}
-            growth={makroKesraData.ntn.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Indikator daya beli nelayan di pedesaan."
-          />
-          <CardIndikatorKesra
-            title="Penumpang Angkutan Laut"
-            value={makroKesraData.penumpangLaut.value ? formatLargeNumber(makroKesraData.penumpangLaut.value) : '-'}
-            unit={makroKesraData.penumpangLaut.unit || 'jiwa'}
-            growth={makroKesraData.penumpangLaut.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Jumlah penumpang yang menggunakan transportasi laut."
-          />
-          <CardIndikatorKesra
-            title="Penumpang Angkutan Udara"
-            value={makroKesraData.penumpangUdara.value ? formatLargeNumber(makroKesraData.penumpangUdara.value) : '-'}
-            unit={makroKesraData.penumpangUdara.unit || 'jiwa'}
-            growth={makroKesraData.penumpangUdara.growth}
-            growthUnit="%"
-            growthDescription="YoY"
-            tooltipText="Jumlah penumpang yang menggunakan transportasi udara."
-          />
-        </section>
-      ) : (
-        <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
-          Tidak ada data Makro-Kesra yang tersedia untuk periode ini.
+      {isLoading && (
+        <div className="text-center py-8">
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+          <p className="text-lg text-gray-600 mt-2">Memuat data...</p>
         </div>
       )}
+
+      {!isLoading && (
+        <>
+          {/* Key Metrics Section */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Metric Card 1: Total Users */}
+            <div className="border-l-4 border-primary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Pendapatan Negara</p>
+                <p className="text-3xl font-semibold text-gray-900">{pendapatanNegara}</p>
+              </div>
+              <DollarSign className="w-10 h-10 text-yellow-500" />
+            </div>
+
+            {/* Metric Card 2: Total Revenue */}
+            <div className="border-l-4 border-primary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Belanja Negara</p>
+                <p className="text-3xl font-semibold text-gray-900">{belanjaNegara}</p>
+              </div>
+              <ShoppingCart className="w-10 h-10 text-info" />
+            </div>
+
+            {/* Metric Card 3: Sales Today */}
+            <div className="border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Pendapatan Daerah</p>
+                <p className="text-3xl font-semibold text-gray-900">{pendapatanDaerah}</p>
+              </div>
+              <Coins className="w-10 h-10 text-yellow-500" />
+            </div>
+
+            {/* Metric Card 4: Active Now */}
+            <div className="border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md flex items-center justify-between transition-transform transform hover:scale-101">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Belanja Daerah</p>
+                <p className="text-3xl font-semibold text-gray-900">{belanjaDaerah}</p>
+              </div>
+              <ShoppingBag className="w-10 h-10 text-info" />
+            </div>
+          </section>
+
+          <h2 className='text-xl font-bold border-b border-gray-300 py-2 mb-4'><i>Overview</i> Ekonomi</h2>
+
+          {/* Charts Section */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Sales and Revenue Chart */}
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">PDRB Nominal</h2>
+              {(PDRBData.length > 0) ? (
+                <ResponsiveContainer className={`text-xs`} width="100%" height={300}>
+                  <ComposedChart data={PDRBData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis dataKey="waktu" axisLine={false} tickLine={false} />
+                    <YAxis
+                      yAxisId='left'
+                      dataKey="adhb"
+                      axisLine={false}
+                      tickLine={false}
+                      label={{
+                        value: 'Miliar',
+                        style: { textAnchor: 'middle' },
+                        angle: -90,
+                        position: 'left',
+                        offset: 0
+                      }}
+                    />
+                    <YAxis
+                      yAxisId='right'
+                      dataKey="laju_tahunan"
+                      axisLine={false}
+                      tickLine={false}
+                      orientation='right'
+                      label={{
+                        value: 'Persen (%)',
+                        style: { textAnchor: 'middle' },
+                        angle: -90,
+                        position: 'right',
+                        offset: 0
+                      }}
+                    />
+                    <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    <Bar yAxisId='left' dataKey="adhb" fill="#8884d8" name="PDRB" barSize={30} />
+                    <Line yAxisId="right" name='Laju Tahunan' dataKey="laju_tahunan" stroke="#82ca9d" strokeWidth={4} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex justify-center items-center skeleton h-[300px] w-full">
+                  <span className="loading loading-spinner text-secondary loading-lg"></span>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2 mb-4">Inflasi</h2>
+              {(inflasiData.length > 0) ? (
+                <ResponsiveContainer width="100%" height={300} className={`text-xs`}>
+                  <LineChart data={inflasiData} >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <XAxis dataKey="waktu"
+                      axisLine={false}
+                      tickLine={false}
+                      label={{
+                        style: { textAnchor: 'middle' },
+                        angle: -90,
+                        offset: 0
+                      }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      label={{
+                        value: 'Persen (%)',
+                        style: { textAnchor: 'middle' },
+                        angle: -90,
+                        position: 'left',
+                        offset: 0
+                      }}
+                    />
+                    <Tooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                    {inflasiUniqueDaerah.map((daerah, index) => (
+                      <Line type="monotone" key={daerah} dataKey={daerah} stroke={getLineColor(index)} activeDot={{ r: 8 }} strokeWidth={3} name={`${daerah}`} />
+                    )
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex justify-center items-center skeleton h-[300px] w-full">
+                  <span className="loading loading-spinner text-secondary loading-lg"></span>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <h2 className='text-xl font-bold border-b border-gray-300 py-2 mb-4'>Kondisi Makro-Kesra</h2>
+          {isLoading && !makroKesraData ? (
+            <div className="flex justify-center items-center py-8">
+              <span className="loading loading-spinner text-primary loading-lg"></span>
+            </div>
+          ) : makroKesraData ? (
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+              <CardIndikatorKesra
+                title="Tingkat Kemiskinan"
+                value={makroKesraData.tingkatKemiskinan.value ? makroKesraData.tingkatKemiskinan.value.toFixed(2) : '-'}
+                unit={makroKesraData.tingkatKemiskinan.unit || '%'}
+                growth={makroKesraData.tingkatKemiskinan.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Persentase penduduk miskin terhadap total penduduk."
+              />
+              <CardIndikatorKesra
+                title="Tingkat Pengangguran Terbuka (TPT)"
+                value={makroKesraData.tingkatPengangguran.value ? makroKesraData.tingkatPengangguran.value.toFixed(2) : '-'}
+                unit={makroKesraData.tingkatPengangguran.unit || '%'}
+                growth={makroKesraData.tingkatPengangguran.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Persentase angkatan kerja yang tidak memiliki pekerjaan."
+              />
+              <CardIndikatorKesra
+                title="Tingkat Penghunian Kamar (TPK) Hotel"
+                value={makroKesraData.tpkHotel.value ? makroKesraData.tpkHotel.value.toFixed(2) : '-'}
+                unit={makroKesraData.tpkHotel.unit || '%'}
+                growth={makroKesraData.tpkHotel.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Persentase rata-rata kamar hotel yang dihuni dari total kamar tersedia."
+              />
+              <CardIndikatorKesra
+                title="Nilai Tukar Petani (NTP)"
+                value={makroKesraData.ntp.value ? makroKesraData.ntp.value.toFixed(2) : '-'}
+                unit={makroKesraData.ntp.unit || 'poin'}
+                growth={makroKesraData.ntp.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Indikator daya beli petani di pedesaan."
+              />
+              <CardIndikatorKesra
+                title="Nilai Tukar Nelayan (NTN)"
+                value={makroKesraData.ntn.value ? makroKesraData.ntn.value.toFixed(2) : '-'}
+                unit={makroKesraData.ntn.unit || 'poin'}
+                growth={makroKesraData.ntn.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Indikator daya beli nelayan di pedesaan."
+              />
+              <CardIndikatorKesra
+                title="Penumpang Angkutan Laut"
+                value={makroKesraData.penumpangLaut.value ? formatLargeNumber(makroKesraData.penumpangLaut.value) : '-'}
+                unit={makroKesraData.penumpangLaut.unit || 'jiwa'}
+                growth={makroKesraData.penumpangLaut.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Jumlah penumpang yang menggunakan transportasi laut."
+              />
+              <CardIndikatorKesra
+                title="Penumpang Angkutan Udara"
+                value={makroKesraData.penumpangUdara.value ? formatLargeNumber(makroKesraData.penumpangUdara.value) : '-'}
+                unit={makroKesraData.penumpangUdara.unit || 'jiwa'}
+                growth={makroKesraData.penumpangUdara.growth}
+                growthUnit="%"
+                growthDescription="YoY"
+                tooltipText="Jumlah penumpang yang menggunakan transportasi udara."
+              />
+            </section>
+          ) : (
+            <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
+              Tidak ada data Makro-Kesra yang tersedia untuk periode ini.
+            </div>
+          )}
+        </>
+      )}
+
 
       <ModalFilter
         isOpen={isFilterModalOpen}

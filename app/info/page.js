@@ -8,10 +8,10 @@ export default function InfoPage() {
   // Informasi dummy untuk Tim Pengembang
   const teamMembers = {
     pembina: [
-      { name: 'Teddy Suhartadi Permadi', title: 'Kepala Kantor Wilayah', image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg' },
+      { name: 'Teddy Suhartadi Permadi', title: 'Kepala Kantor Wilayah', image: '/assets/img/info/pak_kanwil_teddy.jpg' },
     ],
     pengarah: [
-      { name: 'Andi Ahmad Rivai', title: 'Change Agent/Kepala Bidang PAPK', image: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg' },
+      { name: 'Andi Ahmad Rivai', title: 'Change Agent/Kepala Bidang PAPK', image: '/assets/img/info/pak_andi.jpg' },
     ],
     developer: [
       { name: 'Aln Pujo Priambodo', title: 'Fullstack Developer + DB Administrator', image: '/assets/img/info/pujo.jpg' },
@@ -29,8 +29,8 @@ export default function InfoPage() {
     { name: 'Deployment Platform', value: 'Vercel' },
   ]
 
-  const appVersion = "1.0.1"
-  const lastUpdated = "14 Juli 2025"
+  const appVersion = "1.0.2"
+  const lastUpdated = "21 Juli 2025"
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">

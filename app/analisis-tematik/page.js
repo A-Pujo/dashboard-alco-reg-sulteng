@@ -115,11 +115,14 @@ export default function AnalisisTematikList() {
       {!isLoading && !error && analisisData.length > 0 && (
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {analisisData.map((analisis) => (
-            <div key={analisis.id} className="card bg-base-100 shadow-sm border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+            <div key={analisis.id} className="card bg-base-100 shadow-sm border border-gray-200 hover:shadow-lg transition-shadow duration-300 h-fit">
               <div className="card-body p-6">
-                <h3 className="card-title text-lg font-semibold text-gray-800 mb-2">
-                  <BookOpen className="w-6 h-6 mr-2"/> {analisis.judul}
-                </h3>
+                <div className='flex text-md items-center font-semibold text-gray-800 mb-2'>
+                  <BookOpen className="w-6 h-6 mr-2 flex-none"/> 
+                  <h3 className="card-title flex-1">
+                    {analisis.judul}
+                  </h3>
+                </div>
                 <p className="text-sm text-gray-600 mb-2 flex items-center">
                   <Building className="w-4 h-4 mr-1 text-gray-500"/> {analisis.unit_publisher || 'N/A'}
                 </p>
