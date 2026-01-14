@@ -11,15 +11,18 @@ export default function RincianBelanjaNegara() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
   const [appliedFilters, setAppliedFilters] = useState({
     waktu_awal: `${now.getFullYear()}-01-01`,
-    waktu_akhir: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`, // Default to end of current month
+    waktu_akhir: `${now.getFullYear()}-12-31`,
   })
+  console.log(appliedFilters)
   const [rincianBelanjaData, setRincianBelanjaData] = useState(null)
   const [uniqueNMKPPN, setUniqueNMKPPN] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [latestCutoffDateDisplay, setLatestCutoffDateDisplay] = useState('Memuat...') // To display the actual latest date fetched
 
   // Configuration for filter modal
   const filterFields = [
+    // Filter fields are retained for future flexibility if you want manual date filtering back
     { label: 'Waktu Awal', name: 'waktu_awal', type: 'input', inputType: 'date' },
     { label: 'Waktu Akhir', name: 'waktu_akhir', type: 'input', inputType: 'date' },
   ]
@@ -34,59 +37,46 @@ export default function RincianBelanjaNegara() {
 
   const handleApplyFilter = useCallback((filters) => {
     setAppliedFilters(filters)
-    handleCloseFilterModal() // Close modal after applying filters
+    // Note: Applying filters here will override the latest database date logic
+    // if you intend for filters to *always* respect the latest DB date,
+    // you might remove the filter modal or adjust this logic.
+    // For now, if a user applies a filter, it will use that range.
+    handleCloseFilterModal()
   }, [handleCloseFilterModal])
 
   /**
-   * Processes raw data from rincian_belanja_negara to aggregate for display.
-   * Groups data by NMKPPN, then categorizes and sums for JENBEL '5x' and '6x'.
-   * For '6x' JENBEL, it further aggregates by NMKABKOTA, then lists JENBELs under it.
+   * Processes raw data for display.
+   * This function now assumes rawData already contains only records for the desired latest date.
    *
-   * @param {Array} rawData - The raw data fetched from Supabase.
+   * @param {Array} rawData - The raw data fetched from Supabase, already filtered by the latest date.
    * @returns {Object} Structured data for rendering the tables.
    */
   const processRincianBelanjaData = useCallback((rawData) => {
     const processedData = {};
     const kppnSet = new Set();
 
-    // Group by NMKPPN first, and find the latest tgl_cutoff for each KPPN
-    const latestDatePerKPPN = new Map(); // Map<NMKPPN, latest_tgl_cutoff_date_object>
+    // No need for latest date finding or filtering here, rawData is already filtered
     rawData.forEach(item => {
       const kppn = item.NMKPPN;
-      const currentDate = new Date(item.waktu); // Use 'waktu' for cutoff
-      if (!latestDatePerKPPN.has(kppn) || currentDate > latestDatePerKPPN.get(kppn)) {
-        latestDatePerKPPN.set(kppn, currentDate);
-      }
-    });
-
-    // Filter rawData to only include records from the latest tgl_cutoff for each KPPN
-    const filteredByLatestDate = rawData.filter(item => {
-      const kppn = item.NMKPPN;
-      const itemDate = new Date(item.waktu);
-      return latestDatePerKPPN.has(kppn) && itemDate.getTime() === latestDatePerKPPN.get(kppn).getTime();
-    });
-
-    filteredByLatestDate.forEach(item => {
-      const kppn = item.NMKPPN;
       const jenbel = item.JENBEL;
-      const nmkabkota = item.NMKABKOTA;
+      const nmkabkota = item.NMKABKOTA ? item.NMKABKOTA.trim().toUpperCase() : '';
       const paguDipa = item.PAGU_DIPA || 0;
       const realisasi = item.REALISASI || 0;
       const blokir = item.BLOKIR || 0;
 
-      kppnSet.add(kppn); // Collect unique KPPN names
+      kppnSet.add(kppn);
 
       if (!processedData[kppn]) {
         processedData[kppn] = {
-          jenbel5: {}, // Key: JENBEL code, Value: { pagu_dipa, blokir, realisasi }
-          jenbel6ByKabkota: {}, // NEW: Key: NMKABKOTA, Value: { [JENBEL_CODE]: { pagu_dipa, blokir, realisasi, displayName } }
+          jenbel5: {},
+          jenbel6ByKabkota: {},
         };
       }
 
       if (jenbel.startsWith('5')) {
         if (!processedData[kppn].jenbel5[jenbel]) {
           processedData[kppn].jenbel5[jenbel] = {
-            jenbel: item.NMGBKPK, // Use NMGBKPK for display name
+            jenbel: item.NMGBKPK,
             pagu_dipa: 0,
             blokir: 0,
             realisasi: 0,
@@ -101,7 +91,7 @@ export default function RincianBelanjaNegara() {
         }
         if (!processedData[kppn].jenbel6ByKabkota[nmkabkota][jenbel]) {
           processedData[kppn].jenbel6ByKabkota[nmkabkota][jenbel] = {
-            displayName: item.NMGBKPK, // Display name for this specific JENBEL 6x
+            displayName: item.NMGBKPK,
             pagu_dipa: 0,
             blokir: 0,
             realisasi: 0,
@@ -113,48 +103,74 @@ export default function RincianBelanjaNegara() {
       }
     });
 
-    // Convert objects to sorted arrays for consistent rendering
     for (const kppn in processedData) {
-      // Sort JENBEL 5x
       processedData[kppn].jenbel5 = Object.entries(processedData[kppn].jenbel5)
         .map(([code, data]) => ({ code, ...data }))
         .sort((a, b) => a.code.localeCompare(b.code));
 
-      // Sort JENBEL 6x by Kabkota and then by JENBEL code within each Kabkota
       processedData[kppn].jenbel6ByKabkota = Object.entries(processedData[kppn].jenbel6ByKabkota)
         .map(([kabkotaName, jenbelData]) => ({
           nmkabkota: kabkotaName,
           jenbelItems: Object.entries(jenbelData)
             .map(([jenbelCode, data]) => ({ code: jenbelCode, ...data }))
-            .sort((a, b) => a.code.localeCompare(b.code)) // Sort JENBELs within each Kabkota
+            .sort((a, b) => a.code.localeCompare(b.code))
         }))
-        .sort((a, b) => a.nmkabkota.localeCompare(b.nmkabkota)); // Sort Kabkotas
+        .sort((a, b) => a.nmkabkota.localeCompare(b.nmkabkota));
     }
 
     return {
       data: processedData,
-      uniqueKPPN: Array.from(kppnSet).sort(), // Sort KPPN names
+      uniqueKPPN: Array.from(kppnSet).sort(),
     };
   }, []);
-
 
   // Function to fetch and process rincian belanja data
   const fetchRincianBelanjaData = useCallback(async (filters) => {
     setIsLoading(true)
     setError(null)
 
-    const { waktu_awal, waktu_akhir } = filters
-
+    // --- Step 1: Find the latest 'waktu' in the entire table ---
+    let latestWaktu = null;
     try {
-      // Ensure column names match your database casing (e.g., "PAGU_DIPA", "REALISASI", "BLOKIR", "waktu")
+      const { data, error } = await supabase
+        .from('rincian_belanja_negara')
+        .select('waktu')
+        .gte('waktu', appliedFilters.waktu_awal)
+        .lte('waktu', appliedFilters.waktu_akhir)
+        .order('waktu', { ascending: false }) // Descending order
+        .limit(1); // Get only the first (latest) record
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        latestWaktu = data[0].waktu;
+        setLatestCutoffDateDisplay(new Date(latestWaktu).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }));
+      } else {
+        setLatestCutoffDateDisplay('Tidak ada data');
+        setIsLoading(false);
+        setRincianBelanjaData(null);
+        setUniqueNMKPPN([]);
+        return; // No data to fetch
+      }
+    } catch (err) {
+      console.error('Error fetching latest waktu:', err);
+      setError('Gagal menemukan tanggal terbaru data. Silakan coba lagi.');
+      setIsLoading(false);
+      return;
+    }
+
+    // --- Step 2: Fetch all records for that specific latest 'waktu' ---
+    try {
       const { data, error } = await supabase
         .from('rincian_belanja_negara')
         .select('"ID", "THANG", "BULAN", "KDKABKOTA", "NMKABKOTA", "KDKPPN", "NMKPPN", "KDFUNGSI", "NMFUNGSI", "KDSFUNG", "NMSFUNG", "JENBEL", "NMGBKPK", "PAGU_DIPA", "REALISASI", "BLOKIR", "waktu"')
-        .gte('waktu', waktu_awal)
-        .lte('waktu', waktu_akhir)
-        .order('waktu', { ascending: true }); // Order by waktu for latest cutoff logic
+        .eq('waktu', latestWaktu); // Filter by the latest found waktu
 
-      if (error) throw error
+      if (error) throw error;
 
       const { data: processedBelanja, uniqueKPPN } = processRincianBelanjaData(data);
       setRincianBelanjaData(processedBelanja);
@@ -162,18 +178,18 @@ export default function RincianBelanjaNegara() {
 
     } catch (err) {
       console.error('Error fetching rincian belanja data:', err)
-      setError('Gagal memuat data rincian belanja. Silakan coba lagi.')
+      setError('Gagal memuat data rincian belanja untuk tanggal terbaru. Silakan coba lagi.')
       setRincianBelanjaData(null);
       setUniqueNMKPPN([]);
     } finally {
       setIsLoading(false)
     }
-  }, [processRincianBelanjaData]);
+  }, [processRincianBelanjaData]); // Removed `filters` from dependencies as it's not directly used for the primary fetch anymore
 
-  // Call fetch data when component mounts or filter changes
+  // Call fetch data when component mounts
   useEffect(() => {
-    fetchRincianBelanjaData(appliedFilters)
-  }, [appliedFilters, fetchRincianBelanjaData])
+    fetchRincianBelanjaData(appliedFilters) // Still pass appliedFilters, though its direct use is minimal here.
+  }, [appliedFilters]) // Only re-run if fetchRincianBelanjaData changes (which it won't often)
 
   return (
     <main className="flex-1 overflow-y-auto p-4 md:p-8 mt-16 md:mt-12">
@@ -185,7 +201,8 @@ export default function RincianBelanjaNegara() {
       {/* Filter and Date Info Section */}
       <div className="flex text-xs items-center mb-4 text-gray-600">
         <CalendarDays className="w-5 h-5 mr-2" />
-        <p>Cut off data: {appliedFilters.waktu_awal} s.d. {appliedFilters.waktu_akhir}</p>
+        <p>Cut off data: {latestCutoffDateDisplay}</p> {/* Display the actual latest date */}
+        {/* The filter modal remains, but its "waktu_awal" and "waktu_akhir" might not be used directly for the primary display */}
       </div>
 
       {isLoading && (
@@ -247,7 +264,7 @@ export default function RincianBelanjaNegara() {
                     </div>
                   )}
 
-                  {/* Table for JENBEL starting with '6' - NEW STRUCTURE */}
+                  {/* Table for JENBEL starting with '6' */}
                   {rincianBelanjaData[kppnName]?.jenbel6ByKabkota && rincianBelanjaData[kppnName].jenbel6ByKabkota.length > 0 && (
                     <div className="mb-6 overflow-x-auto">
                       <h4 className="text-lg font-semibold text-gray-700 mb-3">Belanja Transfer ke Daerah per Kab/Kota</h4>
@@ -299,7 +316,7 @@ export default function RincianBelanjaNegara() {
             ))
           ) : (
             <div className="bg-white p-6 rounded-lg shadow-md text-center text-gray-500">
-              Tidak ada data rincian belanja negara yang tersedia untuk periode ini.
+              Tidak ada data rincian belanja negara yang tersedia untuk tanggal terbaru ini.
             </div>
           )}
         </>
