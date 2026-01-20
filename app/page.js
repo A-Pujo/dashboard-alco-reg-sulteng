@@ -964,7 +964,7 @@ export default function Dashboard() {
                   note={pendapatanNegaraGrowthNote}
                 />
                 <p className="text-xs italic text-gray-400 mt-1">
-                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                  Sumber: ALCo Kemenkeu Satu Sulteng
                 </p>
               </div>
 
@@ -983,7 +983,7 @@ export default function Dashboard() {
                   note={belanjaNegaraGrowthNote}
                 />
                 <p className="text-xs italic text-gray-400 mt-1">
-                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                  Sumber: ALCo Kemenkeu Satu Sulteng
                 </p>
               </div>
 
@@ -1004,7 +1004,7 @@ export default function Dashboard() {
                   note={surplusAPBNGrowthNote}
                 />
                 <p className="text-xs italic text-gray-400 mt-1">
-                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                  Sumber: ALCo Kemenkeu Satu Sulteng
                 </p>
               </div>
             </div>
