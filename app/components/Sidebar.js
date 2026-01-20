@@ -58,8 +58,9 @@ export default function Sidebar({
       <nav className="mt-8 mb-2 h-3/4">
         <Link
           href="/"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `beranda` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200`}
+          className={`flex items-center px-6 py-3 text-base-content ${
+            activePLink == `beranda` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200`}
           onClick={() => {
             setActivePLink("beranda");
             toggleSidebar();
@@ -70,8 +71,9 @@ export default function Sidebar({
         </Link>
         <Link
           href="/fiskal"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `fiskal` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content ${
+            activePLink == `fiskal` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("fiskal");
             toggleSidebar();
@@ -82,8 +84,9 @@ export default function Sidebar({
         </Link>
         <Link
           href="/ekonomi"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `ekonomi` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content ${
+            activePLink == `ekonomi` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("ekonomi");
             toggleSidebar();
@@ -94,8 +97,9 @@ export default function Sidebar({
         </Link>
         <Link
           href="/makro"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `makro` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content ${
+            activePLink == `makro` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("makro");
             toggleSidebar();
@@ -106,8 +110,9 @@ export default function Sidebar({
         </Link>
         <Link
           href="/analisis-tematik"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `analisis-tematik` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content ${
+            activePLink == `analisis-tematik` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("analisis-tematik");
             toggleSidebar();
@@ -117,21 +122,10 @@ export default function Sidebar({
           Analisis Tematik
         </Link>
         <Link
-          href="/sumber-data"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `sumber-data` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
-          onClick={() => {
-            setActivePLink("sumber-data");
-            toggleSidebar();
-          }}
-        >
-          <Database className="w-5 h-5 mr-3" />
-          Sumber Data
-        </Link>
-        <Link
           href="/info"
-          className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `info` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content  ${
+            activePLink == `info` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("info");
             toggleSidebar();
@@ -142,8 +136,9 @@ export default function Sidebar({
         </Link>
         <Link
           href="/admin"
-          className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `admin` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full border-y border-gray-300 transition-colors duration-200 mt-2`}
+          className={`flex items-center px-6 py-3 text-base-content  ${
+            activePLink == `admin` && `bg-base-200`
+          } hover:bg-base-200 hover:text-base-content rounded-l-full border-y border-gray-300 transition-colors duration-200 mt-2`}
           onClick={() => {
             setActivePLink("admin");
             toggleSidebar();

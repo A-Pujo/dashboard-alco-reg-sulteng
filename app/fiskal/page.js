@@ -49,8 +49,9 @@ const CardKinerja = ({
     </div>
     {change !== null && change !== undefined ? ( // Only show change if it's not null/undefined
       <div
-        className={`flex items-center text-sm ${changeType === "positive" ? "text-green-600" : "text-red-600"
-          }`}
+        className={`flex items-center text-sm ${
+          changeType === "positive" ? "text-green-600" : "text-red-600"
+        }`}
       >
         {changeType === "positive" ? (
           <TrendingUp className="w-4 h-4 mr-1" />
@@ -545,9 +546,9 @@ export default function DashboardKinerjaFiskal() {
         );
         const apbnSurplusYoY = calculateYoYChange(
           apbnCurrentSummary.totalPendapatanRealisasi -
-          apbnCurrentSummary.totalBelanjaRealisasi,
+            apbnCurrentSummary.totalBelanjaRealisasi,
           apbnPrevSummary.totalPendapatanRealisasi -
-          apbnPrevSummary.totalBelanjaRealisasi
+            apbnPrevSummary.totalBelanjaRealisasi
         );
 
         const apbdPendapatanYoY = calculateYoYChange(
@@ -694,9 +695,9 @@ export default function DashboardKinerjaFiskal() {
           {/* Ringkasan Kinerja APBN */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">Kinerja APBN</h3>
-            <button
-              className="btn btn-xs btn-primary rounded-full btn-disabled"
-              disabled
+            <Link
+              href={`/fiskal/belanja-negara`}
+              className="btn btn-xs btn-primary rounded-full"
             >
               Rincian Belanja
             </button>

@@ -1357,8 +1357,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.penumpangUdara.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                      makroKesraData.penumpangUdara.prevWaktu
-                    )}`
+                        makroKesraData.penumpangUdara.prevWaktu
+                      )}`
                     : "YoY"
                 }
                 tooltipText="Jumlah penumpang yang menggunakan transportasi udara."
