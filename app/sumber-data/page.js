@@ -13,7 +13,8 @@ const DATA_SOURCES = [
         deskripsi: 'Data Produk Domestik Regional Bruto Sulawesi Tengah atas dasar harga berlaku dan konstan.',
         tautan: 'https://sulteng.bps.go.id',
         status: 'Tersedia',
-        keterangan: 'Update triwulanan'
+        keterangan: 'Update triwulanan',
+        pemilik_data: 'BPS Provinsi Sulawesi Tengah'
     },
     {
         id: 2,
@@ -21,7 +22,8 @@ const DATA_SOURCES = [
         deskripsi: 'Data inflasi bulanan dan tahunan gabungan kota-kota IHK di Sulawesi Tengah.',
         tautan: 'https://sulteng.bps.go.id',
         status: 'Tersedia',
-        keterangan: 'Update bulanan'
+        keterangan: 'Update bulanan',
+        pemilik_data: 'BPS Provinsi Sulawesi Tengah'
     },
     {
         id: 3,
@@ -29,7 +31,8 @@ const DATA_SOURCES = [
         deskripsi: 'Data realisasi pendapatan dan belanja negara di wilayah Sulawesi Tengah.',
         tautan: 'https://djpb.kemenkeu.go.id',
         status: 'Dalam Perbaikan',
-        keterangan: 'Sedang maintenance API'
+        keterangan: 'Sedang maintenance API',
+        pemilik_data: 'DJPb Provinsi Sulawesi Tengah'
     },
     {
         id: 4,
@@ -37,7 +40,8 @@ const DATA_SOURCES = [
         deskripsi: 'Nilai Tukar Petani (NTP) dan indeks harga yang diterima/dibayar petani.',
         tautan: 'https://sulteng.bps.go.id',
         status: 'Tersedia',
-        keterangan: 'Update bulanan'
+        keterangan: 'Update bulanan',
+        pemilik_data: 'BPS Provinsi Sulawesi Tengah'
     }
 ]
 
@@ -68,6 +72,7 @@ export default function SumberDataPage() {
                         <tr>
                             <th className="w-16 text-center">No</th>
                             <th className="min-w-[200px]">Nama Data</th>
+                            <th className="min-w-[200px]">Pemilik Data</th>
                             <th className="min-w-[300px]">Deskripsi Data</th>
                             <th className="min-w-[150px]">Tautan Sumber</th>
                             <th className="min-w-[150px]">Status</th>
@@ -79,6 +84,7 @@ export default function SumberDataPage() {
                             <tr key={source.id} className="hover">
                                 <th className="text-center">{index + 1}</th>
                                 <td className="font-medium text-gray-900">{source.nama_data}</td>
+                                <td className="text-gray-700">{source.pemilik_data}</td>
                                 <td className="text-gray-600 text-sm whitespace-normal leading-relaxed">
                                     {source.deskripsi}
                                 </td>

@@ -105,6 +105,9 @@ const CardIndikatorKesra = ({
           <span className="text-gray-500">Data pertumbuhan tidak tersedia</span>
         )}
       </div>
+      <p className="text-xs italic text-gray-400 mt-1">
+        Sumber: <a href="https://www.bps.go.id/" target="_blank" rel="noopener noreferrer">BPS Sulawesi Tengah</a>
+      </p>
     </div>
   );
 };
@@ -120,14 +123,14 @@ const GrowthBadge = ({ growth, note, description = "YoY" }) => {
       type === "positive"
         ? "text-green-600"
         : type === "negative"
-        ? "text-red-600"
-        : "text-gray-600";
+          ? "text-red-600"
+          : "text-gray-600";
     const Icon =
       type === "positive"
         ? ArrowUpRight
         : type === "negative"
-        ? ArrowDownRight
-        : Minus;
+          ? ArrowDownRight
+          : Minus;
     const sign = growth > 0 ? "+" : growth < 0 ? "-" : "";
     return (
       <div
@@ -960,6 +963,9 @@ export default function Dashboard() {
                   growth={pendapatanNegaraGrowth}
                   note={pendapatanNegaraGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                </p>
               </div>
 
               <div className="relative border-l-4 border-primary bg-white p-6 rounded-lg shadow-md">
@@ -976,6 +982,9 @@ export default function Dashboard() {
                   growth={belanjaNegaraGrowth}
                   note={belanjaNegaraGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                </p>
               </div>
 
               <div className="relative border-l-4 border-accent bg-white p-6 rounded-lg shadow-md">
@@ -994,6 +1003,9 @@ export default function Dashboard() {
                   growth={surplusAPBNGrowth}
                   note={surplusAPBNGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: DJP Suluttenggomalut, DJBC Sulbagtara, dan DJKN Suluttenggomalut, Treasury Big Data DJPb
+                </p>
               </div>
             </div>
 
@@ -1013,6 +1025,9 @@ export default function Dashboard() {
                   growth={pendapatanDaerahGrowth}
                   note={pendapatanDaerahGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
 
               <div className="relative border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md">
@@ -1029,6 +1044,9 @@ export default function Dashboard() {
                   growth={belanjaDaerahGrowth}
                   note={belanjaDaerahGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
 
               <div className="relative border-l-4 border-accent bg-white p-6 rounded-lg shadow-md">
@@ -1047,6 +1065,9 @@ export default function Dashboard() {
                   growth={surplusAPBDGrowth}
                   note={surplusAPBDGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
             </div>
           </section>
@@ -1216,8 +1237,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tingkatKemiskinan.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tingkatKemiskinan.prevWaktu
-                      )}`
+                      makroKesraData.tingkatKemiskinan.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Persentase penduduk miskin terhadap total penduduk."
@@ -1236,8 +1257,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tingkatPengangguran.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tingkatPengangguran.prevWaktu
-                      )}`
+                      makroKesraData.tingkatPengangguran.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Persentase angkatan kerja yang tidak memiliki pekerjaan."
@@ -1256,8 +1277,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tpkHotel.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tpkHotel.prevWaktu
-                      )}`
+                      makroKesraData.tpkHotel.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Persentase rata-rata kamar hotel yang dihuni dari total kamar tersedia."
@@ -1276,8 +1297,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.ntp.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.ntp.prevWaktu
-                      )}`
+                      makroKesraData.ntp.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Indikator daya beli petani di pedesaan."
@@ -1296,8 +1317,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.ntn.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.ntn.prevWaktu
-                      )}`
+                      makroKesraData.ntn.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Indikator daya beli nelayan di pedesaan."
@@ -1316,8 +1337,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.penumpangLaut.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.penumpangLaut.prevWaktu
-                      )}`
+                      makroKesraData.penumpangLaut.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Jumlah penumpang yang menggunakan transportasi laut."
@@ -1336,8 +1357,8 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.penumpangUdara.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.penumpangUdara.prevWaktu
-                      )}`
+                      makroKesraData.penumpangUdara.prevWaktu
+                    )}`
                     : "YoY"
                 }
                 tooltipText="Jumlah penumpang yang menggunakan transportasi udara."
