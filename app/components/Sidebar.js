@@ -10,7 +10,6 @@ import {
   Wallet,
   LayoutDashboard,
   UserCog,
-  Database,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -116,18 +115,7 @@ export default function Sidebar({
           <Settings className="w-5 h-5 mr-3" />
           Analisis Tematik
         </Link>
-        <Link
-          href="/sumber-data"
-          className={`flex items-center px-6 py-3 text-base-content ${activePLink == `sumber-data` && `bg-base-200`
-            } hover:bg-base-200 hover:text-base-content rounded-l-full transition-colors duration-200 mt-2`}
-          onClick={() => {
-            setActivePLink("sumber-data");
-            toggleSidebar();
-          }}
-        >
-          <Database className="w-5 h-5 mr-3" />
-          Sumber Data
-        </Link>
+
         <Link
           href="/info"
           className={`flex items-center px-6 py-3 text-base-content  ${activePLink == `info` && `bg-base-200`
