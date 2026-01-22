@@ -692,12 +692,12 @@ export default function DashboardKinerjaFiskal() {
           {/* Ringkasan Kinerja APBN */}
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold">Kinerja APBN</h3>
-            <Link
+            {/* <Link
               href={`/fiskal/belanja-negara`}
               className="btn btn-xs btn-primary rounded-full"
             >
               Rincian Belanja
-            </Link>
+            </Link> */}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <CardKinerja
