@@ -542,7 +542,12 @@ export default function DashboardKinerjaFiskal() {
           apbnCurrentSummary.totalBelanjaRealisasi,
           apbnPrevSummary.totalBelanjaRealisasi,
         );
-
+        const apbnSurplusYoY = calculateYoYChange(
+          apbnCurrentSummary.totalPendapatanRealisasi -
+            apbnCurrentSummary.totalBelanjaRealisasi,
+          apbnPrevSummary.totalPendapatanRealisasi -
+            apbnPrevSummary.totalBelanjaRealisasi,
+        );
         const apbdPendapatanYoY = calculateYoYChange(
           apbdCurrentSummary.totalPendapatan,
           apbdPrevSummary.totalPendapatan,
