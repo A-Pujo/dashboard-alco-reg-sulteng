@@ -17,7 +17,7 @@
     "fs": "^0.0.1-security",
     "jshashes": "^1.0.8",
     "lucide-react": "^0.517.0",
-    "next": "15.3.4",
+    "next": "15.3.8",
     "papaparse": "^5.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
