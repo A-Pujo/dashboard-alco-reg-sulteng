@@ -49,9 +49,7 @@ const CardKinerja = ({
     </div>
     {change !== null && change !== undefined ? ( // Only show change if it's not null/undefined
       <div
-        className={`flex items-center text-sm ${
-          changeType === "positive" ? "text-green-600" : "text-red-600"
-        }`}
+        className={`flex items-center text-sm ${changeType === "positive" ? "text-green-600" : "text-red-600"}`}
       >
         {changeType === "positive" ? (
           <TrendingUp className="w-4 h-4 mr-1" />
@@ -77,9 +75,9 @@ export default function DashboardKinerjaFiskal() {
     waktu_awal: `${now.getFullYear()}-01-01`,
     waktu_akhir: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
       2,
-      "0"
+      "0",
     )}-${String(
-      new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
     ).padStart(2, "0")}`, // Default to end of current month
   });
   const [fiskalData, setFiskalData] = useState(null);
@@ -156,7 +154,7 @@ export default function DashboardKinerjaFiskal() {
       setAppliedFilters(filters);
       handleCloseFilterModal(); // Close modal after applying filters
     },
-    [handleCloseFilterModal]
+    [handleCloseFilterModal],
   );
 
   // Helper function to aggregate APBN data for summary cards
@@ -175,7 +173,7 @@ export default function DashboardKinerjaFiskal() {
 
       // Filter data to only include records from the latest date
       const latestData = data.filter(
-        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime()
+        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime(),
       );
 
       latestData.forEach((item) => {
@@ -195,7 +193,7 @@ export default function DashboardKinerjaFiskal() {
         totalBelanjaPagu,
       };
     },
-    [apbnPendapatanKompAng, apbnBelanjaKompAng]
+    [apbnPendapatanKompAng, apbnBelanjaKompAng],
   );
 
   // Helper function to aggregate APBD data for summary cards
@@ -213,7 +211,7 @@ export default function DashboardKinerjaFiskal() {
 
     // Filter data to only include records from the latest date
     const latestData = data.filter(
-      (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime()
+      (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime(),
     );
 
     latestData.forEach((item) => {
@@ -294,7 +292,7 @@ export default function DashboardKinerjaFiskal() {
       }, new Date(0));
 
       const latestData = rawData.filter(
-        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime()
+        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime(),
       );
 
       latestData.forEach((item) => {
@@ -322,7 +320,7 @@ export default function DashboardKinerjaFiskal() {
 
       return aggregated;
     },
-    [apbnPendapatanKompAng, apbnBelanjaKompAng]
+    [apbnPendapatanKompAng, apbnBelanjaKompAng],
   );
 
   // Helper to format large numbers for Y-axis ticks
@@ -393,13 +391,13 @@ export default function DashboardKinerjaFiskal() {
               const currentDate = new Date(item.tgl_cutoff);
               return currentDate > maxDate ? currentDate : maxDate;
             },
-            new Date(0)
+            new Date(0),
           );
 
           const latestAPBNItemsForMonth = monthData.apbnMonthlyItems.filter(
             (item) =>
               new Date(item.tgl_cutoff).getTime() ===
-              latestAPBNDateForMonth.getTime()
+              latestAPBNDateForMonth.getTime(),
           );
 
           latestAPBNItemsForMonth.forEach((item) => {
@@ -418,13 +416,13 @@ export default function DashboardKinerjaFiskal() {
               const currentDate = new Date(item.tgl_cutoff);
               return currentDate > maxDate ? currentDate : maxDate;
             },
-            new Date(0)
+            new Date(0),
           );
 
           const latestAPBDItemsForMonth = monthData.apbdMonthlyItems.filter(
             (item) =>
               new Date(item.tgl_cutoff).getTime() ===
-              latestAPBDDateForMonth.getTime()
+              latestAPBDDateForMonth.getTime(),
           );
 
           // Sum across all `nama_pemda` for the latest date in this month
@@ -446,7 +444,7 @@ export default function DashboardKinerjaFiskal() {
 
       return sortedData;
     },
-    [apbnPendapatanKompAng, apbnBelanjaKompAng]
+    [apbnPendapatanKompAng, apbnBelanjaKompAng],
   );
 
   // Function to fetch and process fiscal data
@@ -491,7 +489,7 @@ export default function DashboardKinerjaFiskal() {
         const { data: apbdCurrentRawData, error: apbdError } = await supabase
           .from("fiskal_pemda")
           .select(
-            "tgl_cutoff, nama_pemda, pendapatan, belanja, pembiayaan, SILPA"
+            "tgl_cutoff, nama_pemda, pendapatan, belanja, pembiayaan, SILPA",
           ) // Added nama_pemda
           .gte("tgl_cutoff", waktu_awal)
           .lte("tgl_cutoff", waktu_akhir)
@@ -503,7 +501,7 @@ export default function DashboardKinerjaFiskal() {
         const { data: apbdPrevRawData, error: apbdPrevError } = await supabase
           .from("fiskal_pemda")
           .select(
-            "tgl_cutoff, nama_pemda, pendapatan, belanja, pembiayaan, SILPA"
+            "tgl_cutoff, nama_pemda, pendapatan, belanja, pembiayaan, SILPA",
           ) // Added nama_pemda
           .gte("tgl_cutoff", prevWaktuAwal)
           .lte("tgl_cutoff", prevWaktuAkhir)
@@ -538,34 +536,28 @@ export default function DashboardKinerjaFiskal() {
 
         const apbnPendapatanYoY = calculateYoYChange(
           apbnCurrentSummary.totalPendapatanRealisasi,
-          apbnPrevSummary.totalPendapatanRealisasi
+          apbnPrevSummary.totalPendapatanRealisasi,
         );
         const apbnBelanjaYoY = calculateYoYChange(
           apbnCurrentSummary.totalBelanjaRealisasi,
-          apbnPrevSummary.totalBelanjaRealisasi
-        );
-        const apbnSurplusYoY = calculateYoYChange(
-          apbnCurrentSummary.totalPendapatanRealisasi -
-            apbnCurrentSummary.totalBelanjaRealisasi,
-          apbnPrevSummary.totalPendapatanRealisasi -
-            apbnPrevSummary.totalBelanjaRealisasi
+          apbnPrevSummary.totalBelanjaRealisasi,
         );
 
         const apbdPendapatanYoY = calculateYoYChange(
           apbdCurrentSummary.totalPendapatan,
-          apbdPrevSummary.totalPendapatan
+          apbdPrevSummary.totalPendapatan,
         );
         const apbdBelanjaYoY = calculateYoYChange(
           apbdCurrentSummary.totalBelanja,
-          apbdPrevSummary.totalBelanja
+          apbdPrevSummary.totalBelanja,
         );
         const apbdPembiayaanYoY = calculateYoYChange(
           apbdCurrentSummary.totalPembiayaan,
-          apbdPrevSummary.totalPembiayaan
+          apbdPrevSummary.totalPembiayaan,
         );
         const apbdSILPAYoY = calculateYoYChange(
           apbdCurrentSummary.totalSILPA,
-          apbdPrevSummary.totalSILPA
+          apbdPrevSummary.totalSILPA,
         );
 
         //  Consolidate all data for state
@@ -620,7 +612,7 @@ export default function DashboardKinerjaFiskal() {
         // Prepare data for charts using the raw data
         const preparedChartData = prepareChartData(
           apbnCurrentRawData,
-          apbdCurrentRawData
+          apbdCurrentRawData,
         );
         setChartData(preparedChartData);
       } catch (err) {
@@ -638,7 +630,7 @@ export default function DashboardKinerjaFiskal() {
       prepareChartData,
       apbnPendapatanKompAng,
       apbnBelanjaKompAng,
-    ]
+    ],
   ); // Added aggregateAPBDTableData to dependencies
 
   // Panggil fetch data saat komponen dimuat atau filter berubah
@@ -764,12 +756,12 @@ export default function DashboardKinerjaFiskal() {
                     <span className="text-right">
                       {formatLargeNumber(
                         apbnIaccountData.pendapatan[komp]?.pagu_target || 0,
-                        2
+                        2,
                       )}{" "}
                       /{" "}
                       {formatLargeNumber(
                         apbnIaccountData.pendapatan[komp]?.realisasi || 0,
-                        2
+                        2,
                       )}
                     </span>
                   </div>
@@ -781,7 +773,7 @@ export default function DashboardKinerjaFiskal() {
                     /{" "}
                     {formatLargeNumber(
                       apbnIaccountData.totalPendapatanRealisasi,
-                      2
+                      2,
                     )}
                   </span>
                 </div>
@@ -805,12 +797,12 @@ export default function DashboardKinerjaFiskal() {
                     <span className="text-right">
                       {formatLargeNumber(
                         apbnIaccountData.belanja[komp]?.pagu_target || 0,
-                        2
+                        2,
                       )}{" "}
                       /{" "}
                       {formatLargeNumber(
                         apbnIaccountData.belanja[komp]?.realisasi || 0,
-                        2
+                        2,
                       )}
                     </span>
                   </div>
@@ -821,7 +813,7 @@ export default function DashboardKinerjaFiskal() {
                     {formatLargeNumber(apbnIaccountData.totalBelanjaPagu, 2)} /{" "}
                     {formatLargeNumber(
                       apbnIaccountData.totalBelanjaRealisasi,
-                      2
+                      2,
                     )}
                   </span>
                 </div>

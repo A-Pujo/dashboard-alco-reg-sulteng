@@ -105,6 +105,16 @@ const CardIndikatorKesra = ({
           <span className="text-gray-500">Data pertumbuhan tidak tersedia</span>
         )}
       </div>
+      <p className="text-xs italic text-gray-400 mt-1">
+        Sumber:{" "}
+        <a
+          href="https://www.bps.go.id/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          BPS Sulawesi Tengah
+        </a>
+      </p>
     </div>
   );
 };
@@ -120,14 +130,14 @@ const GrowthBadge = ({ growth, note, description = "YoY" }) => {
       type === "positive"
         ? "text-green-600"
         : type === "negative"
-        ? "text-red-600"
-        : "text-gray-600";
+          ? "text-red-600"
+          : "text-gray-600";
     const Icon =
       type === "positive"
         ? ArrowUpRight
         : type === "negative"
-        ? ArrowDownRight
-        : Minus;
+          ? ArrowDownRight
+          : Minus;
     const sign = growth > 0 ? "+" : growth < 0 ? "-" : "";
     return (
       <div
@@ -135,7 +145,7 @@ const GrowthBadge = ({ growth, note, description = "YoY" }) => {
       >
         <Icon className="w-4 h-4 mr-2" />
         <span className="font-semibold">{`${sign}${Math.abs(growth).toFixed(
-          2
+          2,
         )}%`}</span>
         {description && (
           <span className="ml-2 text-gray-500">{description}</span>
@@ -191,13 +201,13 @@ export default function Dashboard() {
   const [appliedFilters, setAppliedFilters] = useState({
     waktu_awal: `${waktuSekarang.getFullYear()}-01-01`,
     waktu_akhir: `${waktuSekarang.getFullYear()}-${String(
-      waktuSekarang.getMonth() + 1
+      waktuSekarang.getMonth() + 1,
     ).padStart(2, "0")}-${String(
       new Date(
         waktuSekarang.getFullYear(),
         waktuSekarang.getMonth() + 1,
-        0
-      ).getDate()
+        0,
+      ).getDate(),
     ).padStart(2, "0")}`, // Default to end of current month
   });
 
@@ -327,7 +337,7 @@ export default function Dashboard() {
 
       const transformedData = [];
       const sortedMonthKeys = Array.from(groupedByWaktu.keys()).sort((a, b) =>
-        a.localeCompare(b)
+        a.localeCompare(b),
       );
       sortedMonthKeys.forEach((key) => {
         const entry = { waktu: key };
@@ -362,7 +372,7 @@ export default function Dashboard() {
 
     // Filter to get only entries for the latest date
     const latestEntries = data.filter(
-      (item) => new Date(item[dateKey]).getTime() === latestDate.getTime()
+      (item) => new Date(item[dateKey]).getTime() === latestDate.getTime(),
     );
 
     // Sum the values for the latest date
@@ -394,7 +404,7 @@ export default function Dashboard() {
 
       // Filter data to only include records from the latest date
       const latestDataForSummary = data.filter(
-        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime()
+        (item) => new Date(item.tgl_cutoff).getTime() === latestDate.getTime(),
       );
 
       // Aggregate pendapatan and belanja from the latest data
@@ -445,7 +455,7 @@ export default function Dashboard() {
 
           const prevLatestData = prevData.filter(
             (item) =>
-              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime()
+              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime(),
           );
           let prevPendapatan = 0;
           let prevBelanja = 0;
@@ -466,11 +476,11 @@ export default function Dashboard() {
           if (!prevPendapatan) {
             setPendapatanNegaraGrowth(null);
             setPendapatanNegaraGrowthNote(
-              "# tidak ada data periode sebelumnya"
+              "# tidak ada data periode sebelumnya",
             );
           } else {
             setPendapatanNegaraGrowth(
-              calculateGrowth(totalPendapatanRealisasi, prevPendapatan)
+              calculateGrowth(totalPendapatanRealisasi, prevPendapatan),
             );
             setPendapatanNegaraGrowthNote(null);
           }
@@ -480,7 +490,7 @@ export default function Dashboard() {
             setBelanjaNegaraGrowthNote("# tidak ada data periode sebelumnya");
           } else {
             setBelanjaNegaraGrowth(
-              calculateGrowth(totalBelanjaRealisasi, prevBelanja)
+              calculateGrowth(totalBelanjaRealisasi, prevBelanja),
             );
             setBelanjaNegaraGrowthNote(null);
           }
@@ -533,7 +543,7 @@ export default function Dashboard() {
 
           const prevLatestData = prevData.filter(
             (item) =>
-              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime()
+              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime(),
           );
           let prevPendapatan = 0;
           let prevBelanja = 0;
@@ -592,12 +602,12 @@ export default function Dashboard() {
       const latestPendapatanDaerah = getLatestCumulativeValue(
         data,
         "pendapatan",
-        "tgl_cutoff"
+        "tgl_cutoff",
       );
       const latestBelanjaDaerah = getLatestCumulativeValue(
         data,
         "belanja",
-        "tgl_cutoff"
+        "tgl_cutoff",
       );
 
       // set raw numeric states
@@ -645,15 +655,15 @@ export default function Dashboard() {
 
           const prevLatestEntries = prevData.filter(
             (item) =>
-              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime()
+              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime(),
           );
           const prevPendapatan = prevLatestEntries.reduce(
             (s, it) => s + (it.pendapatan || 0),
-            0
+            0,
           );
           const prevBelanja = prevLatestEntries.reduce(
             (s, it) => s + (it.belanja || 0),
-            0
+            0,
           );
 
           console.debug("APBD latest vs prev totals", {
@@ -666,11 +676,11 @@ export default function Dashboard() {
           if (!prevPendapatan) {
             setPendapatanDaerahGrowth(null);
             setPendapatanDaerahGrowthNote(
-              "# tidak ada data periode sebelumnya"
+              "# tidak ada data periode sebelumnya",
             );
           } else {
             setPendapatanDaerahGrowth(
-              calculateGrowth(latestPendapatanDaerah, prevPendapatan)
+              calculateGrowth(latestPendapatanDaerah, prevPendapatan),
             );
             setPendapatanDaerahGrowthNote(null);
           }
@@ -680,7 +690,7 @@ export default function Dashboard() {
             setBelanjaDaerahGrowthNote("# tidak ada data periode sebelumnya");
           } else {
             setBelanjaDaerahGrowth(
-              calculateGrowth(latestBelanjaDaerah, prevBelanja)
+              calculateGrowth(latestBelanjaDaerah, prevBelanja),
             );
             setBelanjaDaerahGrowthNote(null);
           }
@@ -739,15 +749,15 @@ export default function Dashboard() {
 
           const prevLatestEntries = prevData.filter(
             (item) =>
-              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime()
+              new Date(item.tgl_cutoff).getTime() === prevLatestDate.getTime(),
           );
           const prevPendapatan = prevLatestEntries.reduce(
             (s, it) => s + (it.pendapatan || 0),
-            0
+            0,
           );
           const prevBelanja = prevLatestEntries.reduce(
             (s, it) => s + (it.belanja || 0),
-            0
+            0,
           );
           const prevSurplus = prevPendapatan - prevBelanja;
           console.debug("APBD surplus prev computed", {
@@ -811,7 +821,7 @@ export default function Dashboard() {
       for (const [indikatorName, values] of indicatorValuesMap.entries()) {
         // Sort values by date to ensure correct latest/previous comparison
         values.sort(
-          (a, b) => new Date(a.waktu).getTime() - new Date(b.waktu).getTime()
+          (a, b) => new Date(a.waktu).getTime() - new Date(b.waktu).getTime(),
         );
 
         const latestEntry =
@@ -960,6 +970,9 @@ export default function Dashboard() {
                   growth={pendapatanNegaraGrowth}
                   note={pendapatanNegaraGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: ALCo Kemenkeu Satu Sulteng
+                </p>
               </div>
 
               <div className="relative border-l-4 border-primary bg-white p-6 rounded-lg shadow-md">
@@ -976,6 +989,9 @@ export default function Dashboard() {
                   growth={belanjaNegaraGrowth}
                   note={belanjaNegaraGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: ALCo Kemenkeu Satu Sulteng
+                </p>
               </div>
 
               <div className="relative border-l-4 border-accent bg-white p-6 rounded-lg shadow-md">
@@ -994,6 +1010,9 @@ export default function Dashboard() {
                   growth={surplusAPBNGrowth}
                   note={surplusAPBNGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: ALCo Kemenkeu Satu Sulteng
+                </p>
               </div>
             </div>
 
@@ -1013,6 +1032,9 @@ export default function Dashboard() {
                   growth={pendapatanDaerahGrowth}
                   note={pendapatanDaerahGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
 
               <div className="relative border-l-4 border-secondary bg-white p-6 rounded-lg shadow-md">
@@ -1029,6 +1051,9 @@ export default function Dashboard() {
                   growth={belanjaDaerahGrowth}
                   note={belanjaDaerahGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
 
               <div className="relative border-l-4 border-accent bg-white p-6 rounded-lg shadow-md">
@@ -1047,6 +1072,9 @@ export default function Dashboard() {
                   growth={surplusAPBDGrowth}
                   note={surplusAPBDGrowthNote}
                 />
+                <p className="text-xs italic text-gray-400 mt-1">
+                  Sumber: Sistem Keuangan Republik Indonesia (SIKRI)
+                </p>
               </div>
             </div>
           </section>
@@ -1216,7 +1244,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tingkatKemiskinan.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tingkatKemiskinan.prevWaktu
+                        makroKesraData.tingkatKemiskinan.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1236,7 +1264,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tingkatPengangguran.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tingkatPengangguran.prevWaktu
+                        makroKesraData.tingkatPengangguran.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1256,7 +1284,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.tpkHotel.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.tpkHotel.prevWaktu
+                        makroKesraData.tpkHotel.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1276,7 +1304,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.ntp.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.ntp.prevWaktu
+                        makroKesraData.ntp.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1296,7 +1324,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.ntn.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.ntn.prevWaktu
+                        makroKesraData.ntn.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1316,7 +1344,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.penumpangLaut.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.penumpangLaut.prevWaktu
+                        makroKesraData.penumpangLaut.prevWaktu,
                       )}`
                     : "YoY"
                 }
@@ -1336,7 +1364,7 @@ export default function Dashboard() {
                 growthDescription={
                   makroKesraData.penumpangUdara.prevWaktu
                     ? `dibandingkan ${formatWaktu(
-                        makroKesraData.penumpangUdara.prevWaktu
+                        makroKesraData.penumpangUdara.prevWaktu,
                       )}`
                     : "YoY"
                 }
